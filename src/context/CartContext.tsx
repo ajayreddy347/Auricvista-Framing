@@ -1,15 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-/**
- * =========================================================================
- * CART CONTEXT & STATE ENGINE (LOCAL / MOCK STATE)
- * =========================================================================
- * NOTE / BACKEND INTEGRATION PLACEHOLDER:
- * In production, this local cart state should synchronize with the user's
- * cloud profile or backend cart API (e.g. Firestore / Redis cart session).
- * =========================================================================
- */
-
 export interface CartItem {
   productId: string;
   name: string;
@@ -17,7 +7,9 @@ export interface CartItem {
   price: number;
   quantity: number;
   unit: string;
+  farmerId?: string;
   farmerName: string;
+  maxAvailable?: number;
 }
 
 interface CartContextType {
@@ -65,15 +57,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addToCart = (newItem: Omit<CartItem, 'quantity'>, quantityToAdd: number = 1) => {
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex((item) => item.productId === newItem.productId);
+      const maxLimit = newItem.maxAvailable !== undefined ? newItem.maxAvailable : 9999;
+
       if (existingIndex > -1) {
         const updated = [...prevItems];
+        const currentQty = updated[existingIndex].quantity;
+        const proposedQty = currentQty + quantityToAdd;
+        const finalQty = Math.min(proposedQty, maxLimit);
+
         updated[existingIndex] = {
           ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + quantityToAdd,
+          ...newItem,
+          quantity: Math.max(1, finalQty),
+          maxAvailable: maxLimit,
         };
         return updated;
       }
-      return [...prevItems, { ...newItem, quantity: quantityToAdd }];
+
+      const initialQty = Math.min(Math.max(1, quantityToAdd), maxLimit);
+      return [...prevItems, { ...newItem, quantity: initialQty, maxAvailable: maxLimit }];
     });
   };
 
@@ -87,9 +89,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item
-      )
+      prevItems.map((item) => {
+        if (item.productId === productId) {
+          const limit = item.maxAvailable !== undefined ? item.maxAvailable : 9999;
+          const clampedQty = Math.min(quantity, limit);
+          return { ...item, quantity: clampedQty };
+        }
+        return item;
+      })
     );
   };
 

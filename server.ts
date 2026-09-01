@@ -4,6 +4,15 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 
+import { checkDbHealth } from './src/db/index';
+import { runMigrations } from './src/db/migrate';
+import authRoutes from './src/server/routes/authRoutes';
+import produceRoutes from './src/server/routes/produceRoutes';
+import orderRoutes from './src/server/routes/orderRoutes';
+import reviewRoutes from './src/server/routes/reviewRoutes';
+import farmerRoutes from './src/server/routes/farmerRoutes';
+import { errorHandler } from './src/server/middleware/errorHandler';
+
 dotenv.config();
 
 // Initialize Gemini Client
@@ -58,15 +67,34 @@ async function resolveImageBase64(imageInput: string): Promise<{ data: string; m
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   app.use(express.json({ limit: '25mb' }));
   app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
+  // Initialize PostgreSQL Database & Run Migrations
+  try {
+    await runMigrations();
+  } catch (dbErr: any) {
+    console.error('[Server Startup Warning] PostgreSQL migration encountered an issue:', dbErr.message);
+  }
+
+  // Health check endpoint with Database verification
+  app.get('/api/health', async (req, res) => {
+    const dbStatus = await checkDbHealth();
+    res.json({
+      status: 'ok',
+      time: new Date().toISOString(),
+      database: dbStatus,
+    });
   });
+
+  // REST API Routes
+  app.use('/api/auth', authRoutes);
+  app.use('/api/produce', produceRoutes);
+  app.use('/api/orders', orderRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/farmers', farmerRoutes);
 
   // AI Produce Image Quality & Freshness Inspector
   app.post('/api/analyze-produce-image', async (req, res) => {
@@ -81,8 +109,6 @@ async function startServer() {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        console.warn('GEMINI_API_KEY is not defined in environment.');
-        // Return a realistic simulation if key is not configured yet
         return res.json({
           qualityScore: 9.4,
           freshnessLabel: 'Excellent',
@@ -164,7 +190,6 @@ Return strictly valid JSON only.`;
       });
 
       let responseText = response.text || '';
-      // Strip markdown code fences if present
       responseText = responseText.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim();
 
       let parsedResult;
@@ -220,7 +245,10 @@ Return strictly valid JSON only.`;
     }
   });
 
-  // Vite middleware for development
+  // Centralized Error Handler Middleware
+  app.use(errorHandler);
+
+  // Vite middleware for development / Static dist serving for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: {

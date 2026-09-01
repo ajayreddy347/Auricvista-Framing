@@ -1,20 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-/**
- * =========================================================================
- * CUSTOMER RATINGS & REVIEWS CONTEXT & ENGINE (MOCK / LOCAL)
- * =========================================================================
- * NOTE / BACKEND INTEGRATION PLACEHOLDER:
- * This is currently a client-side mock review engine utilizing browser
- * LocalStorage. In production, real review submission, customer order
- * verification, image storage buckets, and automated content moderation
- * will be handled by a secure backend database (e.g., Firestore / Cloud SQL).
- * =========================================================================
- */
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export interface CustomerReview {
   id: string;
-  farmerId: string; // e.g. 'ravi-kumar', 'lakshmi-devi', 'suresh-naidu'
+  farmerId: string;
   farmerName?: string;
   produceId?: string;
   produceName?: string;
@@ -23,8 +11,8 @@ export interface CustomerReview {
   rating: number; // 1 to 5
   comment: string;
   date: string;
-  verified: boolean; // Verified Purchase badge
-  photos?: string[]; // Optional user uploaded harvest photos
+  verified: boolean;
+  photos?: string[];
   helpfulCount?: number;
   isUserReviewed?: boolean;
 }
@@ -43,19 +31,33 @@ export interface RatingStats {
 
 interface ReviewsContextType {
   reviews: CustomerReview[];
+  isLoading: boolean;
+  error: string | null;
+  refreshReviews: () => Promise<void>;
   getFarmerReviews: (farmerId: string) => CustomerReview[];
   getFarmerStats: (farmerId: string) => RatingStats;
   getProductReviews: (produceId: string) => CustomerReview[];
   getProductStats: (produceId: string) => { average: number; totalCount: number };
-  addReview: (data: Omit<CustomerReview, 'id' | 'date'>) => CustomerReview;
+  addReview: (data: Omit<CustomerReview, 'id' | 'date'>) => Promise<CustomerReview>;
   toggleHelpful: (reviewId: string) => void;
 }
 
 const STORAGE_KEY = 'auricvista_customer_reviews';
 
-// Rich, authentic initial mock reviews for featured farmers & produce
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = localStorage.getItem('auricvista_auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {
+    // Storage restricted
+  }
+  return headers;
+}
+
 const INITIAL_MOCK_REVIEWS: CustomerReview[] = [
-  // Ravi Kumar Reviews
   {
     id: 'rev-rk-1',
     farmerId: 'ravi-kumar',
@@ -65,7 +67,7 @@ const INITIAL_MOCK_REVIEWS: CustomerReview[] = [
     customerName: 'Ananya Sharma',
     rating: 5,
     comment:
-      'The heirloom vine tomatoes arrived within 14 hours of dawn harvest. The aroma took me back to my grandparents’ farm in Karnataka. Super juicy with vibrant deep crimson flesh!',
+      'The heirloom vine tomatoes arrived within 14 hours of dawn harvest. The aroma took me back to my grandparents farm in Karnataka. Super juicy with vibrant deep crimson flesh!',
     date: '2026-08-28',
     verified: true,
     photos: ['https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400'],
@@ -80,39 +82,12 @@ const INITIAL_MOCK_REVIEWS: CustomerReview[] = [
     customerName: 'Vikramaditya Sengupta',
     rating: 5,
     comment:
-      'The hydroponic baby spinach had crisp, unbruised leaves with zero pesticide residue. You can taste the purity right in raw salads. Ravi Kumar’s farm is truly world-class.',
+      'The hydroponic baby spinach had crisp, unbruised leaves with zero pesticide residue. You can taste the purity right in raw salads.',
     date: '2026-08-25',
     verified: true,
+    photos: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=80&w=400'],
     helpfulCount: 18,
   },
-  {
-    id: 'rev-rk-3',
-    farmerId: 'ravi-kumar',
-    farmerName: 'Ravi Kumar',
-    produceId: 'PROD-103',
-    produceName: 'Heritage Rainbow Carrots',
-    customerName: 'Meera Kulkarni',
-    rating: 5,
-    comment:
-      'The rainbow carrots were remarkably sweet and crunchy. Packed in biodegradable banana leaf wrapping. Loved the transparency in pricing!',
-    date: '2026-08-20',
-    verified: true,
-    helpfulCount: 12,
-  },
-  {
-    id: 'rev-rk-4',
-    farmerId: 'ravi-kumar',
-    farmerName: 'Ravi Kumar',
-    customerName: 'Dr. Rajesh Patel',
-    rating: 4,
-    comment:
-      'Consistently fresh produce directly dispatched from Chikkaballapur. Excellent turgor and color. Minor delivery delay during heavy rains, but produce remained pristine.',
-    date: '2026-08-14',
-    verified: true,
-    helpfulCount: 7,
-  },
-
-  // Lakshmi Devi Reviews
   {
     id: 'rev-ld-1',
     farmerId: 'lakshmi-devi',
@@ -120,73 +95,10 @@ const INITIAL_MOCK_REVIEWS: CustomerReview[] = [
     customerName: 'Priya Nambiar',
     rating: 5,
     comment:
-      'Lakshmi Devi’s hydroponic salad greens are the best in Bengaluru. Crisp, immaculate, and stay fresh in the fridge for over a week.',
-    date: '2026-08-29',
+      'Lakshmi Devi�s hydroponic salad greens are the best in Bengaluru. Crisp, immaculate, and stay fresh in the fridge for over a week.',
+    date: '2026-08-20',
     verified: true,
-    photos: ['https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=80&w=400'],
     helpfulCount: 31,
-  },
-  {
-    id: 'rev-ld-2',
-    farmerId: 'lakshmi-devi',
-    farmerName: 'Lakshmi Devi',
-    customerName: 'Gaurav Bansal',
-    rating: 5,
-    comment:
-      'Sweet exotic honeydew melons harvested at peak ripeness. Zero bitter aftertaste, exactly as promised.',
-    date: '2026-08-22',
-    verified: true,
-    helpfulCount: 15,
-  },
-  {
-    id: 'rev-ld-3',
-    farmerId: 'lakshmi-devi',
-    farmerName: 'Lakshmi Devi',
-    customerName: 'Kavita Menon',
-    rating: 4,
-    comment:
-      'Very clean hydroponic greens. Love that 100% of my payment went straight to Lakshmi’s bank account without middlemen markups.',
-    date: '2026-08-18',
-    verified: false,
-    helpfulCount: 9,
-  },
-
-  // Suresh Naidu Reviews
-  {
-    id: 'rev-sn-1',
-    farmerId: 'suresh-naidu',
-    farmerName: 'Suresh Naidu',
-    customerName: 'Raghavan Iyer',
-    rating: 5,
-    comment:
-      'Ancient foxtail and barnyard millets stone-ground naturally. The aroma and nutrition are unmatched. Suresh Naidu preserves our heritage crops with great care.',
-    date: '2026-08-27',
-    verified: true,
-    helpfulCount: 22,
-  },
-  {
-    id: 'rev-sn-2',
-    farmerId: 'suresh-naidu',
-    farmerName: 'Suresh Naidu',
-    customerName: 'Siddharth Rao',
-    rating: 4,
-    comment:
-      'Unprocessed native pulses and organic ghee. Authentic taste and wholesome packaging.',
-    date: '2026-08-21',
-    verified: true,
-    helpfulCount: 8,
-  },
-  {
-    id: 'rev-sn-3',
-    farmerId: 'suresh-naidu',
-    farmerName: 'Suresh Naidu',
-    customerName: 'Rohini Deshmukh',
-    rating: 5,
-    comment:
-      'Direct farm deliveries have completely changed our household cooking. Exceptional quality pulses.',
-    date: '2026-08-16',
-    verified: true,
-    helpfulCount: 14,
   },
 ];
 
@@ -205,88 +117,149 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return INITIAL_MOCK_REVIEWS;
   });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-    } catch (e) {
-      console.warn('Failed to save reviews to localStorage:', e);
+    } catch {
+      // Storage restricted
     }
   }, [reviews]);
 
-  const getFarmerReviews = (farmerId: string): CustomerReview[] => {
-    return reviews.filter((r) => r.farmerId === farmerId);
-  };
-
-  const getFarmerStats = (farmerId: string): RatingStats => {
-    const farmerRevs = getFarmerReviews(farmerId);
-    if (farmerRevs.length === 0) {
-      // Default baseline stats for established certified farmers
-      return {
-        average: 4.8,
-        totalCount: 1,
-        distribution: { 5: 1, 4: 0, 3: 0, 2: 0, 1: 0 },
-      };
+  const refreshReviews = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/reviews');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setReviews(data);
+        }
+      }
+    } catch (err: any) {
+      console.warn('Reviews loaded from cache:', err.message);
+      setError('Offline mode: Using cached reviews');
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    let sum = 0;
+  useEffect(() => {
+    refreshReviews();
+  }, [refreshReviews]);
 
-    farmerRevs.forEach((r) => {
-      sum += r.rating;
-      const rounded = Math.min(5, Math.max(1, Math.round(r.rating))) as 1 | 2 | 3 | 4 | 5;
-      distribution[rounded] = (distribution[rounded] || 0) + 1;
-    });
+  const getFarmerReviews = useCallback(
+    (farmerId: string) => {
+      const normId = farmerId.toLowerCase();
+      return reviews.filter(
+        (r) =>
+          r.farmerId.toLowerCase() === normId ||
+          (r.farmerName && r.farmerName.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(normId))
+      );
+    },
+    [reviews]
+  );
 
-    const average = Math.round((sum / farmerRevs.length) * 10) / 10;
+  const getFarmerStats = useCallback(
+    (farmerId: string): RatingStats => {
+      const farmerReviews = getFarmerReviews(farmerId);
+      if (farmerReviews.length === 0) {
+        return {
+          average: 4.9,
+          totalCount: 0,
+          distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+        };
+      }
 
-    return {
-      average,
-      totalCount: farmerRevs.length,
-      distribution,
-    };
-  };
+      const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      let sum = 0;
 
-  const getProductReviews = (produceId: string): CustomerReview[] => {
-    return reviews.filter((r) => r.produceId === produceId);
-  };
+      farmerReviews.forEach((r) => {
+        sum += r.rating;
+        const rounded = Math.round(r.rating) as 1 | 2 | 3 | 4 | 5;
+        if (rounded >= 1 && rounded <= 5) {
+          distribution[rounded] = (distribution[rounded] || 0) + 1;
+        }
+      });
 
-  const getProductStats = (produceId: string): { average: number; totalCount: number } => {
-    const prodRevs = getProductReviews(produceId);
-    if (prodRevs.length === 0) {
-      // Return a realistic baseline score if new item
       return {
-        average: 4.9,
-        totalCount: 18,
+        average: parseFloat((sum / farmerReviews.length).toFixed(1)),
+        totalCount: farmerReviews.length,
+        distribution,
       };
-    }
+    },
+    [getFarmerReviews]
+  );
 
-    const sum = prodRevs.reduce((acc, r) => acc + r.rating, 0);
-    const average = Math.round((sum / prodRevs.length) * 10) / 10;
+  const getProductReviews = useCallback(
+    (produceId: string) => {
+      return reviews.filter((r) => r.produceId === produceId);
+    },
+    [reviews]
+  );
 
-    return {
-      average,
-      totalCount: prodRevs.length,
-    };
-  };
+  const getProductStats = useCallback(
+    (produceId: string) => {
+      const productReviews = getProductReviews(produceId);
+      if (productReviews.length === 0) {
+        return { average: 4.9, totalCount: 12 };
+      }
+      const sum = productReviews.reduce((acc, r) => acc + r.rating, 0);
+      return {
+        average: parseFloat((sum / productReviews.length).toFixed(1)),
+        totalCount: productReviews.length,
+      };
+    },
+    [getProductReviews]
+  );
 
-  const addReview = (data: Omit<CustomerReview, 'id' | 'date'>): CustomerReview => {
+  const addReview = async (data: Omit<CustomerReview, 'id' | 'date'>): Promise<CustomerReview> => {
+    const tempId = `REV-${Date.now().toString().slice(-6)}`;
     const newReview: CustomerReview = {
       ...data,
-      id: `REV-${Date.now().toString().slice(-6)}`,
+      id: tempId,
       date: new Date().toISOString().split('T')[0],
       helpfulCount: 0,
       isUserReviewed: true,
     };
 
     setReviews((prev) => [newReview, ...prev]);
+
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        const saved = await res.json();
+        setReviews((prev) =>
+          prev.map((r) => (r.id === tempId ? { ...saved, isUserReviewed: true } : r))
+        );
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Review saved locally, backend sync failed:', err);
+    }
+
     return newReview;
   };
 
   const toggleHelpful = (reviewId: string) => {
     setReviews((prev) =>
-      prev.map((r) =>
-        r.id === reviewId ? { ...r, helpfulCount: (r.helpfulCount || 0) + 1 } : r
-      )
+      prev.map((r) => {
+        if (r.id === reviewId) {
+          return {
+            ...r,
+            helpfulCount: (r.helpfulCount || 0) + 1,
+          };
+        }
+        return r;
+      })
     );
   };
 
@@ -294,6 +267,9 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <ReviewsContext.Provider
       value={{
         reviews,
+        isLoading,
+        error,
+        refreshReviews,
         getFarmerReviews,
         getFarmerStats,
         getProductReviews,
@@ -307,7 +283,7 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useReviews = () => {
+export const useReviews = (): ReviewsContextType => {
   const context = useContext(ReviewsContext);
   if (!context) {
     throw new Error('useReviews must be used within a ReviewsProvider');

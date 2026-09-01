@@ -68,7 +68,7 @@ export const SignupPage: React.FC = () => {
     setErrorMessage('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -110,20 +110,24 @@ export const SignupPage: React.FC = () => {
 
     setIsLoading(true);
 
-    // Simulate account creation
-    setTimeout(() => {
-      setIsLoading(false);
-      signup(selectedRole, {
+    try {
+      const newUser = await signup({
         name: fullName.trim(),
         email: email.trim().toLowerCase(),
+        password,
+        role: selectedRole,
         phone: phone.trim(),
         location: selectedRole === 'farmer' ? farmLocation.trim() : deliveryAddress.trim(),
         farmName: selectedRole === 'farmer' && farmName.trim() ? farmName.trim() : undefined,
         address: selectedRole === 'customer' ? deliveryAddress.trim() : undefined,
       });
 
-      navigate(selectedRole === 'farmer' ? '/farmer-dashboard' : '/customer-dashboard');
-    }, 700);
+      navigate(newUser.role === 'farmer' ? '/farmer-dashboard' : '/customer-dashboard');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to create account. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

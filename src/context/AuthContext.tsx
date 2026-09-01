@@ -1,98 +1,197 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-/**
- * =========================================================================
- * AUTHENTICATION CONTEXT & STATE ENGINE (MOCK / LOCAL)
- * =========================================================================
- * NOTE / BACKEND INTEGRATION PLACEHOLDER:
- * This is currently a client-side mock authentication engine utilizing
- * browser LocalStorage. In production, this logic will be replaced with
- * real backend authentication (e.g. Firebase Auth, Supabase, or custom
- * JWT OAuth endpoints with encrypted credentials & token refresh cycles).
- * =========================================================================
- */
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type UserRole = 'farmer' | 'customer';
 
+export interface FarmerProfileMetadata {
+  id: string;
+  farmerSlug: string;
+  farmName: string;
+  location: string;
+  experience?: string;
+  specialty?: string;
+  acreage?: string;
+  highlightBadge?: string;
+  verificationStatus?: string;
+}
+
 export interface UserProfile {
+  id: string;
   name: string;
   email: string;
   phone?: string;
   role: UserRole;
-  location?: string; // Farm location or delivery city
-  farmName?: string; // Optional for farmers
-  address?: string;  // Customer delivery address
-  joinedDate?: string;
+  location?: string;
+  farmName?: string;
+  address?: string;
+  createdAt?: string;
+  farmerProfile?: FarmerProfileMetadata;
+}
+
+export interface SignupData {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+  location?: string;
+  farmName?: string;
+  address?: string;
 }
 
 interface AuthContextType {
   isLoggedIn: boolean;
   userRole: UserRole | null;
   user: UserProfile | null;
-  login: (role: UserRole, email: string, name?: string) => void;
-  signup: (role: UserRole, profile: Omit<UserProfile, 'role'>) => void;
+  token: string | null;
+  isLoading: boolean;
+  login: (email: string, password: string, role?: UserRole) => Promise<UserProfile>;
+  signup: (data: SignupData) => Promise<UserProfile>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
+  getAuthHeaders: () => Record<string, string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'auricvista_auth_state';
+const TOKEN_STORAGE_KEY = 'auricvista_auth_token';
+const USER_STORAGE_KEY = 'auricvista_auth_state';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(TOKEN_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+
   const [user, setUser] = useState<UserProfile | null>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(USER_STORAGE_KEY);
       if (saved) {
         return JSON.parse(saved);
       }
     } catch {
-      // Fallback if parsing fails
+      // Fallback
     }
     return null;
   });
 
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Sync token and user to localStorage
   useEffect(() => {
     try {
-      if (user) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      if (token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+
+      if (user) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      } else {
+        localStorage.removeItem(USER_STORAGE_KEY);
       }
     } catch {
-      // Storage unavailable or restricted
+      // Storage restricted
     }
-  }, [user]);
+  }, [token, user]);
 
-  const login = (role: UserRole, email: string, name?: string) => {
-    // Generate simulated user info based on role if name not provided
-    const defaultName = role === 'farmer' ? (name || 'Ravi Kumar') : (name || 'Ananya Sharma');
-    const defaultLocation = role === 'farmer' ? 'Chikkaballapur Valley, Karnataka' : 'Indiranagar, Bengaluru';
+  // Verify JWT session on app load
+  const verifySession = useCallback(async (authToken: string) => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
 
-    const newUser: UserProfile = {
-      name: defaultName,
-      email: email.trim().toLowerCase(),
-      role,
-      location: defaultLocation,
-      farmName: role === 'farmer' ? 'Kumar Organic Heritage Farm #702' : undefined,
-      address: role === 'customer' ? 'Flat 402, Green Meadows, 12th Main, Indiranagar' : undefined,
-      phone: '+91 98450 12890',
-      joinedDate: 'August 2026',
-    };
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      } else {
+        // Token expired or invalid
+        console.warn('Session expired or invalid token; clearing authentication state.');
+        setToken(null);
+        setUser(null);
+      }
+    } catch (err: any) {
+      console.warn('Could not verify session with backend, keeping cached profile:', err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-    setUser(newUser);
+  useEffect(() => {
+    if (token) {
+      verifySession(token);
+    } else {
+      setIsLoading(false);
+    }
+  }, [token, verifySession]);
+
+  const login = async (email: string, password: string, role?: UserRole): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to sign in. Please verify your credentials.');
+      }
+
+      // Check role match if requested
+      if (role && data.user.role !== role) {
+        throw new Error(
+          `This account is registered as a ${data.user.role}. Please select the ${data.user.role.toUpperCase()} portal.`
+        );
+      }
+
+      setToken(data.token);
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const signup = (role: UserRole, profile: Omit<UserProfile, 'role'>) => {
-    const newUser: UserProfile = {
-      ...profile,
-      role,
-      joinedDate: 'August 2026',
-    };
-    setUser(newUser);
+  const signup = async (data: SignupData): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok) {
+        const errorDetail = Array.isArray(resData.details)
+          ? resData.details.join('. ')
+          : resData.error;
+        throw new Error(errorDetail || 'Failed to register account.');
+      }
+
+      setToken(resData.token);
+      setUser(resData.user);
+      return resData.user;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
+    setToken(null);
     setUser(null);
   };
 
@@ -101,7 +200,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser({ ...user, ...updates });
   };
 
-  const isLoggedIn = !!user;
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
+  const isLoggedIn = !!user && !!token;
   const userRole = user?.role || null;
 
   return (
@@ -110,10 +219,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoggedIn,
         userRole,
         user,
+        token,
+        isLoading,
         login,
         signup,
         logout,
         updateProfile,
+        getAuthHeaders,
       }}
     >
       {children}

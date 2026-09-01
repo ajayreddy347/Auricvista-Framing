@@ -1,16 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-/**
- * =========================================================================
- * PRODUCE LISTINGS CONTEXT & LOCAL STORAGE STATE
- * =========================================================================
- * NOTE / BACKEND & AI INTEGRATION PLACEHOLDER:
- * - This provides mock client-side persistence (LocalStorage) for farmer listings.
- * - In the next build step, image uploads will be sent to cloud storage (e.g. S3,
- *   Cloud Storage / Firebase Storage) and the AI quality analysis will call the
- *   Gemini Multimodal API to compute freshness, ripeness, and grading metrics.
- * =========================================================================
- */
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export type ProduceCategory =
   | 'Vegetables'
@@ -23,8 +11,8 @@ export type ProduceCategory =
 export type ProduceUnit = 'kg' | 'dozen' | 'litre' | 'piece' | 'bunch' | 'quintal';
 
 export interface AIQualityRatingData {
-  qualityScore: number; // 1.0 to 10.0
-  freshnessScore: number; // e.g. 94 (%)
+  qualityScore: number;
+  freshnessScore: number;
   freshnessLabel: 'Excellent' | 'Good' | 'Fair' | 'Needs Improvement';
   notes: string;
   tags: string[];
@@ -53,7 +41,7 @@ export interface ProduceListing {
   farmerName: string;
   farmerEmail?: string;
   description?: string;
-  images: string[]; // local URLs / base64 thumbnails
+  images: string[];
   status: 'Active' | 'Draft' | 'Sold Out';
   createdAt: string;
   aiQualityRating?: AIQualityRatingData;
@@ -61,15 +49,32 @@ export interface ProduceListing {
 
 interface ProduceContextType {
   listings: ProduceListing[];
-  addListing: (listing: Omit<ProduceListing, 'id' | 'createdAt'>) => ProduceListing;
-  saveDraft: (listing: Omit<ProduceListing, 'id' | 'createdAt'>) => ProduceListing;
-  removeListing: (id: string) => void;
-  updateListingStatus: (id: string, status: 'Active' | 'Draft' | 'Sold Out') => void;
+  isLoading: boolean;
+  error: string | null;
+  refreshListings: () => Promise<void>;
+  addListing: (listing: Omit<ProduceListing, 'id' | 'createdAt'>) => Promise<ProduceListing>;
+  saveDraft: (listing: Omit<ProduceListing, 'id' | 'createdAt'>) => Promise<ProduceListing>;
+  removeListing: (id: string) => Promise<void>;
+  updateListingStatus: (id: string, status: 'Active' | 'Draft' | 'Sold Out') => Promise<void>;
+  updateListing: (id: string, updates: Partial<ProduceListing>) => Promise<ProduceListing | null>;
 }
 
 const ProduceContext = createContext<ProduceContextType | undefined>(undefined);
 
 const PRODUCE_STORAGE_KEY = 'auricvista_produce_listings';
+
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const token = localStorage.getItem('auricvista_auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  } catch {
+    // Local storage restricted
+  }
+  return headers;
+}
 
 const INITIAL_MOCK_LISTINGS: ProduceListing[] = [
   {
@@ -160,23 +165,52 @@ export const ProduceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return JSON.parse(saved);
       }
     } catch {
-      // fallback
+      // Fallback
     }
     return INITIAL_MOCK_LISTINGS;
   });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       localStorage.setItem(PRODUCE_STORAGE_KEY, JSON.stringify(listings));
     } catch {
-      // storage quota or restriction
+      // Storage restricted
     }
   }, [listings]);
 
-  const addListing = (data: Omit<ProduceListing, 'id' | 'createdAt'>): ProduceListing => {
+  const refreshListings = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/produce');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setListings(data);
+        }
+      } else {
+        setError('Failed to load listings from server');
+      }
+    } catch (err: any) {
+      console.warn('Produce listings fetched from cache:', err.message);
+      setError('Offline mode: Using cached listings');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshListings();
+  }, [refreshListings]);
+
+  const addListing = async (data: Omit<ProduceListing, 'id' | 'createdAt'>): Promise<ProduceListing> => {
+    const tempId = `PROD-${Date.now().toString().slice(-6)}`;
     const newListing: ProduceListing = {
       ...data,
-      id: `PROD-${Date.now().toString().slice(-6)}`,
+      id: tempId,
       createdAt: new Date().toISOString(),
       status: 'Active',
       aiQualityRating: data.aiQualityRating || {
@@ -190,40 +224,136 @@ export const ProduceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       },
     };
 
+    // Optimistic local state update
     setListings((prev) => [newListing, ...prev]);
+
+    try {
+      const res = await fetch('/api/produce', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...data,
+          pricePerUnit: data.pricePerUnit,
+          quantity: data.quantity,
+        }),
+      });
+
+      if (res.ok) {
+        const savedRow = await res.json();
+        setListings((prev) =>
+          prev.map((item) => (item.id === tempId ? { ...savedRow } : item))
+        );
+        return savedRow;
+      }
+    } catch (err) {
+      console.warn('Failed to persist listing to backend, kept in local cache:', err);
+    }
+
     return newListing;
   };
 
-  const saveDraft = (data: Omit<ProduceListing, 'id' | 'createdAt'>): ProduceListing => {
+  const saveDraft = async (data: Omit<ProduceListing, 'id' | 'createdAt'>): Promise<ProduceListing> => {
+    const tempId = `DRAFT-${Date.now().toString().slice(-6)}`;
     const newListing: ProduceListing = {
       ...data,
-      id: `DRAFT-${Date.now().toString().slice(-6)}`,
+      id: tempId,
       createdAt: new Date().toISOString(),
       status: 'Draft',
     };
 
     setListings((prev) => [newListing, ...prev]);
+
+    try {
+      const res = await fetch('/api/produce', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          ...data,
+          status: 'Draft',
+        }),
+      });
+
+      if (res.ok) {
+        const savedRow = await res.json();
+        setListings((prev) =>
+          prev.map((item) => (item.id === tempId ? { ...savedRow } : item))
+        );
+        return savedRow;
+      }
+    } catch (err) {
+      console.warn('Draft kept locally, backend save skipped:', err);
+    }
+
     return newListing;
   };
 
-  const removeListing = (id: string) => {
+  const removeListing = async (id: string): Promise<void> => {
     setListings((prev) => prev.filter((item) => item.id !== id));
+
+    try {
+      await fetch(`/api/produce/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+    } catch (err) {
+      console.warn('Delete synced locally, backend failed:', err);
+    }
   };
 
-  const updateListingStatus = (id: string, status: 'Active' | 'Draft' | 'Sold Out') => {
+  const updateListingStatus = async (id: string, status: 'Active' | 'Draft' | 'Sold Out'): Promise<void> => {
     setListings((prev) =>
       prev.map((item) => (item.id === id ? { ...item, status } : item))
     );
+
+    try {
+      await fetch(`/api/produce/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ status }),
+      });
+    } catch (err) {
+      console.warn('Status update kept locally, backend sync failed:', err);
+    }
+  };
+
+  const updateListing = async (id: string, updates: Partial<ProduceListing>): Promise<ProduceListing | null> => {
+    setListings((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+
+    try {
+      const res = await fetch(`/api/produce/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updates),
+      });
+
+      if (res.ok) {
+        const saved = await res.json();
+        setListings((prev) =>
+          prev.map((item) => (item.id === id ? { ...saved } : item))
+        );
+        return saved;
+      }
+    } catch (err) {
+      console.warn('Listing update failed on backend:', err);
+    }
+
+    return null;
   };
 
   return (
     <ProduceContext.Provider
       value={{
         listings,
+        isLoading,
+        error,
+        refreshListings,
         addListing,
         saveDraft,
         removeListing,
         updateListingStatus,
+        updateListing,
       }}
     >
       {children}

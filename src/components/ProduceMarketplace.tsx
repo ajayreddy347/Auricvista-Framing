@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Check,
+  AlertCircle,
 } from 'lucide-react';
 import { StarRating } from './StarRating';
 import { ProductDetailModal } from './ProductDetailModal';
@@ -137,6 +138,7 @@ export const ProduceMarketplace: React.FC = () => {
 
   const handleAddToCart = (e: React.MouseEvent, prod: ProduceListing) => {
     e.stopPropagation();
+    if (prod.status === 'Sold Out' || prod.quantity <= 0) return;
     addToCart({
       productId: prod.id,
       name: prod.name,
@@ -144,6 +146,7 @@ export const ProduceMarketplace: React.FC = () => {
       price: prod.pricePerUnit,
       unit: prod.unit,
       farmerName: prod.farmerName,
+      maxAvailable: prod.quantity,
     }, 1);
     setCartSuccessId(prod.id);
     setTimeout(() => {
@@ -486,14 +489,22 @@ export const ProduceMarketplace: React.FC = () => {
                   <div className="pt-3 border-t border-[#d4af37]/15 flex items-center justify-between gap-2">
                     <button
                       type="button"
+                      disabled={prod.status === 'Sold Out' || prod.quantity <= 0}
                       onClick={(e) => handleAddToCart(e, prod)}
-                      className={`flex-1 py-2.5 px-3.5 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer ${
-                        isAddedToCart
-                          ? 'bg-[#34d399] text-[#0a0a0a] shadow-[0_0_15px_rgba(52,211,153,0.4)]'
-                          : 'bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] hover:brightness-110 shadow-[0_0_15px_rgba(212,175,55,0.3)] active:scale-[0.98]'
+                      className={`flex-1 py-2.5 px-3.5 rounded-xl font-mono text-xs uppercase tracking-wider font-semibold transition-all duration-300 flex items-center justify-center gap-1.5 ${
+                        prod.status === 'Sold Out' || prod.quantity <= 0
+                          ? 'bg-[#18150e] border border-[#d4af37]/15 text-[#8e8b82] cursor-not-allowed opacity-60'
+                          : isAddedToCart
+                          ? 'bg-[#34d399] text-[#0a0a0a] shadow-[0_0_15px_rgba(52,211,153,0.4)] cursor-pointer'
+                          : 'bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] hover:brightness-110 shadow-[0_0_15px_rgba(212,175,55,0.3)] active:scale-[0.98] cursor-pointer'
                       }`}
                     >
-                      {isAddedToCart ? (
+                      {prod.status === 'Sold Out' || prod.quantity <= 0 ? (
+                        <>
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Sold Out</span>
+                        </>
+                      ) : isAddedToCart ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-[#0a0a0a]" />
                           <span>Added to Cart</span>

@@ -14,6 +14,7 @@ import { Header } from './components/Header';
 import { CartDrawer } from './components/CartDrawer';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Page Views
 import { HomePage } from './pages/HomePage';
@@ -56,13 +57,40 @@ export default function App() {
                         <Route path="/how-it-works" element={<HowItWorksPage />} />
                         <Route path="/impact" element={<ImpactPage />} />
                         <Route path="/trust" element={<TrustPage />} />
-                        <Route path="/farmer-dashboard" element={<FarmerDashboardPage />} />
-                        <Route path="/farmer-dashboard/post-produce" element={<PostProducePage />} />
-                        <Route path="/customer-dashboard" element={<CustomerDashboardPage />} />
+
+                        {/* Farmer Protected Routes */}
+                        <Route
+                          path="/farmer-dashboard"
+                          element={
+                            <ProtectedRoute allowedRoles={['farmer']}>
+                              <FarmerDashboardPage />
+                            </ProtectedRoute>
+                          }
+                        />
+                        <Route
+                          path="/farmer-dashboard/post-produce"
+                          element={
+                            <ProtectedRoute allowedRoles={['farmer']}>
+                              <PostProducePage />
+                            </ProtectedRoute>
+                          }
+                        />
+
+                        {/* Customer Protected Routes */}
+                        <Route
+                          path="/customer-dashboard"
+                          element={
+                            <ProtectedRoute allowedRoles={['customer']}>
+                              <CustomerDashboardPage />
+                            </ProtectedRoute>
+                          }
+                        />
+
                         <Route path="/checkout" element={<CheckoutPage />} />
                         <Route path="/order-confirmed" element={<OrderConfirmedPage />} />
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignupPage />} />
+
                         {/* Fallback route back to home */}
                         <Route path="*" element={<HomePage />} />
                       </Routes>

@@ -61,7 +61,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   const canWriteReview = isLoggedIn && userRole === 'customer';
 
+  const isSoldOut = produce.status === 'Sold Out' || produce.quantity <= 0;
+
   const handleReserve = () => {
+    if (isSoldOut) return;
     addToCart({
       productId: produce.id,
       name: produce.name,
@@ -69,6 +72,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       price: produce.pricePerUnit,
       unit: produce.unit,
       farmerName: produce.farmerName,
+      maxAvailable: produce.quantity,
     }, 1);
     setReservedSuccess(true);
     setTimeout(() => {
@@ -299,17 +303,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleReserve}
-                className="flex-1 py-3.5 px-5 rounded-xl bg-[#1a160e] border border-[#d4af37]/60 text-[#fae69e] font-bold text-xs uppercase tracking-wider hover:border-[#fae69e] hover:bg-[#251e12] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                disabled={isSoldOut}
+                className={`flex-1 py-3.5 px-5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  isSoldOut
+                    ? 'bg-[#18150e] border border-[#d4af37]/15 text-[#8e8b82] cursor-not-allowed opacity-60'
+                    : 'bg-[#1a160e] border border-[#d4af37]/60 text-[#fae69e] hover:border-[#fae69e] hover:bg-[#251e12] active:scale-[0.99] cursor-pointer'
+                }`}
               >
                 <ShoppingBag className="w-4 h-4 text-[#fae69e]" />
                 <span>
-                  {reservedSuccess ? 'Added to Cart ✓' : 'Add to Cart'}
+                  {isSoldOut ? 'Sold Out' : reservedSuccess ? 'Added to Cart ✓' : 'Add to Cart'}
                 </span>
               </button>
 
               <button
                 type="button"
+                disabled={isSoldOut}
                 onClick={() => {
+                  if (isSoldOut) return;
                   addToCart({
                     productId: produce.id,
                     name: produce.name,
@@ -317,13 +328,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     price: produce.pricePerUnit,
                     unit: produce.unit,
                     farmerName: produce.farmerName,
+                    maxAvailable: produce.quantity,
                   }, 1);
                   onClose();
                   navigate('/checkout');
                 }}
-                className="flex-1 py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] font-bold text-xs uppercase tracking-widest hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_25px_rgba(212,175,55,0.4)] cursor-pointer flex items-center justify-center gap-2"
+                className={`flex-1 py-3.5 px-5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                  isSoldOut
+                    ? 'bg-[#18150e] border border-[#d4af37]/15 text-[#8e8b82] cursor-not-allowed opacity-60'
+                    : 'bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] hover:brightness-110 active:scale-[0.99] shadow-[0_0_25px_rgba(212,175,55,0.4)] cursor-pointer'
+                }`}
               >
-                <span>Instant Checkout →</span>
+                <span>{isSoldOut ? 'Out of Stock' : 'Instant Checkout →'}</span>
               </button>
             </div>
           </div>

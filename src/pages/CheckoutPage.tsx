@@ -49,6 +49,7 @@ export const CheckoutPage: React.FC = () => {
     recipientPhone?: string;
     paymentMethod?: string;
   }>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pre-fill from user profile
@@ -155,7 +156,7 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: typeof errors = {};
@@ -183,10 +184,10 @@ export const CheckoutPage: React.FC = () => {
 
     setErrors({});
     setIsSubmitting(true);
+    setGeneralError(null);
 
-    // Simulate order placement
-    setTimeout(() => {
-      const placed = placeOrder({
+    try {
+      const placed = await placeOrder({
         items: [...items],
         subtotal,
         deliveryFee,
@@ -208,7 +209,10 @@ export const CheckoutPage: React.FC = () => {
       navigate(`/order-confirmed?orderId=${placed.id}`, {
         state: { order: placed },
       });
-    }, 800);
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setGeneralError(err.message || 'Failed to place order.');
+    }
   };
 
   return (
@@ -342,6 +346,16 @@ export const CheckoutPage: React.FC = () => {
               onSubmit={handlePlaceOrder}
               className="p-6 sm:p-8 rounded-3xl bg-[#0e0d0b]/90 border-2 border-[#d4af37]/35 backdrop-blur-2xl shadow-[0_0_50px_-15px_rgba(212,175,55,0.25)] space-y-7"
             >
+              {generalError && (
+                <div className="p-4 rounded-2xl bg-[#2a1215] border border-[#f87171]/40 text-[#fca5a5] text-xs font-mono flex items-start gap-2.5 shadow-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#f87171]" />
+                  <div className="flex-1">
+                    <strong className="block text-[#fca5a5] font-semibold mb-0.5">Order Placement Issue</strong>
+                    <span>{generalError}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Step 1: Delivery Mode Toggle */}
               <div>
                 <label className="block text-xs font-mono uppercase tracking-widest text-[#fae69e] mb-3">

@@ -64,7 +64,7 @@ export const LoginPage: React.FC = () => {
     setPassword('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -92,13 +92,14 @@ export const LoginPage: React.FC = () => {
 
     setIsLoading(true);
 
-    // Simulate authenticating against backend
-    setTimeout(() => {
+    try {
+      const authenticatedUser = await login(email, password, selectedRole);
+      navigate(authenticatedUser.role === 'farmer' ? '/farmer-dashboard' : '/customer-dashboard');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Authentication failed. Please check your credentials.');
+    } finally {
       setIsLoading(false);
-      const name = selectedRole === 'farmer' ? 'Ravi Kumar' : 'Ananya Sharma';
-      login(selectedRole, email, name);
-      navigate(selectedRole === 'farmer' ? '/farmer-dashboard' : '/customer-dashboard');
-    }, 600);
+    }
   };
 
   return (

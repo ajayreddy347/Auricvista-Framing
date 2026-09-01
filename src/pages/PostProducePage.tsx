@@ -200,7 +200,7 @@ export const PostProducePage: React.FC = () => {
   };
 
   // Submit Listing Handler
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
       // Scroll up slightly to view errors
@@ -210,9 +210,8 @@ export const PostProducePage: React.FC = () => {
 
     setIsSubmitting(true);
 
-    // Direct network broadcast & AI quality indexing
-    setTimeout(() => {
-      const created = addListing({
+    try {
+      const created = await addListing({
         name: productName.trim(),
         category,
         quantity: Number(quantity),
@@ -228,19 +227,20 @@ export const PostProducePage: React.FC = () => {
         aiQualityRating: aiRating || undefined,
       });
 
-      setIsSubmitting(false);
       setPublishedListing(created);
-    }, 600);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Save as Draft Handler
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!productName.trim()) {
       setErrors((prev) => ({ ...prev, productName: 'Enter at least a product name to save draft.' }));
       return;
     }
 
-    saveDraft({
+    await saveDraft({
       name: productName.trim(),
       category: category || 'Vegetables',
       quantity: Number(quantity) || 10,

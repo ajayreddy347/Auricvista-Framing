@@ -5,58 +5,69 @@ import {
   Plus,
   TrendingUp,
   Package,
-  Users,
   ShoppingBag,
   Sparkles,
   ArrowRight,
-  ShieldCheck,
   CheckCircle2,
   X,
   MapPin,
-  LogIn,
   Bot,
-  Layers,
   Star,
   MessageSquare,
-  BarChart3,
-  ThumbsUp,
+  Truck,
+  Trash2,
+  Clock,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProduce } from '../context/ProduceContext';
+import { useOrders, OrderStatus } from '../context/OrdersContext';
 import { useReviews } from '../context/ReviewsContext';
 import { StarRating } from './StarRating';
 
-/* NOTE: In the next development phase, all local/mock states (listings, reviews, auth) 
-   should be replaced with real backend/database calls (e.g., Firebase Firestore, Cloud SQL, or custom API). */
-
 export const FarmerDashboardSection: React.FC = () => {
   const { isLoggedIn, userRole, user } = useAuth();
-  const { listings, addListing } = useProduce();
+  const { listings, addListing, removeListing, updateListingStatus } = useProduce();
+  const { orders, updateOrderStatus } = useOrders();
   const { getFarmerStats, getFarmerReviews, getProductStats } = useReviews();
-  
-  const [activeDashboardTab, setActiveDashboardTab] = useState<'inventory' | 'reviews'>('inventory');
+
+  const [activeDashboardTab, setActiveDashboardTab] = useState<'inventory' | 'orders' | 'reviews'>('inventory');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newProduceName, setNewProduceName] = useState('');
   const [newProducePrice, setNewProducePrice] = useState('');
   const [newProduceQuantity, setNewProduceQuantity] = useState('');
+  const [newProduceCategory, setNewProduceCategory] = useState<'Vegetables' | 'Fruits' | 'Grains' | 'Pulses' | 'Farm Fresh'>('Vegetables');
   const [addedSuccess, setAddedSuccess] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  const farmerId = user?.name?.toLowerCase().includes('lakshmi')
-    ? 'lakshmi-devi'
-    : user?.name?.toLowerCase().includes('suresh')
-    ? 'suresh-naidu'
-    : 'ravi-kumar';
+  const farmerId = user?.farmerProfile?.farmerSlug ||
+    (user?.name?.toLowerCase().includes('lakshmi')
+      ? 'lakshmi-devi'
+      : user?.name?.toLowerCase().includes('suresh')
+      ? 'suresh-naidu'
+      : 'ravi-kumar');
 
   const reviewsStats = getFarmerStats(farmerId);
   const farmerReviews = getFarmerReviews(farmerId);
 
-  // Filter farmer active listings
-  const activeListings = listings.filter((item) => item.status === 'Active');
+  // Filter farmer listings strictly to this grower
+  const farmerListings = listings.filter(
+    (item) =>
+      item.farmerEmail?.toLowerCase() === user?.email?.toLowerCase() ||
+      item.farmerName?.toLowerCase() === user?.name?.toLowerCase() ||
+      (user?.role === 'farmer' && !item.farmerEmail)
+  );
+
+  const activeListings = farmerListings.filter((item) => item.status === 'Active');
   const totalStockKg = activeListings.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
 
+  // Calculate real total sales from non-cancelled orders
+  const totalSales = orders
+    .filter((o) => o.status !== 'Cancelled')
+    .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
   // Calculate Average AI Quality Score across all listings
-  const listingsWithAi = activeListings.filter(
+  const listingsWithAi = farmerListings.filter(
     (item) => item.aiQualityRating && typeof item.aiQualityRating.qualityScore === 'number'
   );
   const avgAiQuality =
@@ -70,34 +81,28 @@ export const FarmerDashboardSection: React.FC = () => {
       : '9.8';
 
   const farmerStats = [
-    { label: "Today's Sales", value: '₹4,850', icon: TrendingUp, highlight: true },
+    { label: "Total Revenue", value: `₹${totalSales.toLocaleString('en-IN')}`, icon: TrendingUp, highlight: true },
     { label: 'Avg. AI Quality', value: `${avgAiQuality}/10`, icon: Bot },
     { label: 'Avg. Rating', value: `${reviewsStats.average.toFixed(1)} ★`, icon: Star },
-    { label: 'Reviews', value: `${reviewsStats.totalCount}`, icon: MessageSquare },
+    { label: 'Live Orders', value: `${orders.length}`, icon: ShoppingBag },
     { label: 'Active Items', value: `${activeListings.length}`, icon: Package },
     { label: 'Available Stock', value: `${totalStockKg} kg`, icon: Tractor },
   ];
 
-  const recentOrders = [
-    { id: 'ORD-8921', item: 'Organic Cherry Tomatoes (40 kg)', buyer: 'Cafe Botanica', status: 'Packed & Dispatched', time: '10 mins ago', amount: '₹1,520' },
-    { id: 'ORD-8920', item: 'Hydroponic Spinach (15 kg)', buyer: 'Ananya Sharma', status: 'Delivered', time: '1 hour ago', amount: '₹750' },
-    { id: 'ORD-8919', item: 'Country Farm Eggs (60 pcs)', buyer: 'Grand Hotel Kitchen', status: 'Delivered', time: '3 hours ago', amount: '₹1,200' },
-  ];
-
-  const handleAddProduce = (e: React.FormEvent) => {
+  const handleAddProduce = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProduceName.trim()) return;
 
-    addListing({
+    await addListing({
       name: newProduceName.trim(),
-      category: 'Vegetables',
+      category: newProduceCategory,
       quantity: Number(newProduceQuantity) || 50,
       unit: 'kg',
       pricePerUnit: Number(newProducePrice.replace(/[^0-9.]/g, '')) || 40,
       harvestDate: new Date().toISOString().split('T')[0],
-      farmLocation: user?.location || 'Kumar Organic Heritage Farm, Chikkaballapur Valley',
+      farmLocation: user?.location || user?.farmerProfile?.location || 'Kumar Organic Heritage Farm, Chikkaballapur Valley',
       farmerName: user?.name || 'Ravi Kumar',
-      farmerEmail: user?.email,
+      farmerEmail: user?.email || 'ravi.kumar@auricvista.farm',
       images: ['https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=800'],
       status: 'Active',
       aiQualityRating: {
@@ -119,7 +124,21 @@ export const FarmerDashboardSection: React.FC = () => {
       setNewProduceName('');
       setNewProducePrice('');
       setNewProduceQuantity('');
-    }, 1200);
+    }, 1500);
+  };
+
+  const handleAdvanceStatus = async (orderId: string, currentStatus: OrderStatus) => {
+    setUpdatingOrderId(orderId);
+    let nextStatus: OrderStatus = 'Harvesting';
+    if (currentStatus === 'Placed') nextStatus = 'Harvesting';
+    else if (currentStatus === 'Harvesting') nextStatus = 'Dispatched';
+    else if (currentStatus === 'Dispatched') nextStatus = 'Delivered';
+
+    try {
+      await updateOrderStatus(orderId, nextStatus);
+    } finally {
+      setUpdatingOrderId(null);
+    }
   };
 
   const containerVariants = {
@@ -127,26 +146,32 @@ export const FarmerDashboardSection: React.FC = () => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.12,
+        staggerChildren: 0.1,
       },
     },
   };
 
   const itemFadeUp = {
-    hidden: { opacity: 0, y: 24 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration: 0.7,
+        duration: 0.6,
         ease: [0.16, 1, 0.3, 1] as const,
       },
     },
   };
 
   const displayName = isLoggedIn && user?.role === 'farmer' ? user.name : 'Ravi Kumar';
-  const displayFarm = isLoggedIn && user?.role === 'farmer' && user.farmName ? user.farmName : 'Kumar Organic Heritage Farm #702';
-  const displayLocation = isLoggedIn && user?.role === 'farmer' && user.location ? user.location : 'Chikkaballapur Valley, Karnataka';
+  const displayFarm =
+    isLoggedIn && user?.role === 'farmer'
+      ? user.farmName || user.farmerProfile?.farmName || 'Kumar Organic Heritage Farm #702'
+      : 'Kumar Organic Heritage Farm #702';
+  const displayLocation =
+    isLoggedIn && user?.role === 'farmer'
+      ? user.location || user.farmerProfile?.location || 'Chikkaballapur Valley, Karnataka'
+      : 'Chikkaballapur Valley, Karnataka';
 
   return (
     <section
@@ -160,503 +185,497 @@ export const FarmerDashboardSection: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto w-full">
-        {/* ========================================================================= */}
-        {/* SECTION HEADER & TITLE */}
-        {/* ========================================================================= */}
+        {/* SECTION HEADER */}
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-80px' }}
           variants={containerVariants}
-          className="text-center max-w-3xl mx-auto"
+          className="text-center max-w-3xl mx-auto mb-14"
         >
-          <motion.div variants={itemFadeUp} className="mb-5 inline-block">
-            <div
-              id="farmer-dash-pill"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#14120c]/80 border border-[#d4af37]/30 backdrop-blur-md shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)]"
-            >
-              <Tractor className="w-3.5 h-3.5 text-[#d4af37]" />
-              <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Producer Portal • "My Farm"
-              </span>
-            </div>
+          <motion.div
+            variants={itemFadeUp}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#16140e] border border-[#d4af37]/40 backdrop-blur-md mb-4 shadow-[0_0_20px_-5px_rgba(212,175,55,0.3)]"
+          >
+            <Tractor className="w-4 h-4 text-[#fae69e]" />
+            <span className="text-xs font-mono uppercase tracking-widest text-[#fae69e] font-semibold">
+              Grower Portal & Escrow Terminal
+            </span>
           </motion.div>
 
-          <motion.h1
+          <motion.h2
             variants={itemFadeUp}
-            id="farmer-dash-heading"
-            className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
+            className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#f5f3eb] gold-gradient-text"
           >
-            <span className="block text-[#fcfbf7]">
-              Farmer Command Dashboard
-            </span>
-          </motion.h1>
+            Farmer Operations Center
+          </motion.h2>
 
-          <motion.p
-            variants={itemFadeUp}
-            id="farmer-dash-subtext"
-            className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
-          >
-            Manage live harvest stock, fulfill direct buyer orders, and view zero-middleman daily sales.
+          <motion.p variants={itemFadeUp} className="mt-3 text-sm sm:text-base text-[#aba79c] font-sans">
+            Manage your certified harvest inventory, monitor direct consumer orders, and inspect transparent payouts.
           </motion.p>
-
-          {/* If not logged in as farmer, show helpful banner */}
-          {(!isLoggedIn || userRole !== 'farmer') && (
-            <motion.div variants={itemFadeUp} className="mt-6">
-              <div className="inline-flex flex-wrap items-center justify-center gap-3 p-3 px-5 rounded-2xl bg-[#14120c] border border-[#d4af37]/40 text-xs text-[#fae69e]">
-                <span>Preview Mode: Sign in to unlock full farm inventory & instant bank payouts.</span>
-                <Link
-                  to="/login?role=farmer"
-                  className="px-3 py-1 rounded-full bg-[#fae69e] text-[#0a0a0a] font-mono font-semibold uppercase tracking-wider hover:brightness-110 flex items-center gap-1"
-                >
-                  <LogIn className="w-3 h-3" />
-                  Farmer Sign In
-                </Link>
-              </div>
-            </motion.div>
-          )}
         </motion.div>
 
-        {/* ========================================================================= */}
-        {/* MAIN DASHBOARD CONTENT                                                    */}
-        {/* ========================================================================= */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-60px' }}
-          variants={containerVariants}
-          className="mt-14 sm:mt-18"
-        >
-          <div
-            id="farmer-dashboard-main-card"
-            className="p-7 sm:p-10 rounded-3xl bg-[#0e0d0b]/90 border-2 border-[#d4af37]/35 hover:border-[#d4af37] backdrop-blur-2xl shadow-[0_0_50px_-15px_rgba(212,175,55,0.25)] transition-all duration-300"
-          >
-            {/* Header / Profile Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2a2412] to-[#12100a] border border-[#d4af37]/45 flex items-center justify-center text-[#fae69e] shadow-[0_0_15px_-3px_rgba(212,175,55,0.25)]">
-                  <Tractor className="w-7 h-7" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#fcfbf7]">
-                      {displayFarm}
-                    </h3>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#18150d] border border-[#d4af37]/30 text-[#34d399]">
-                      <ShieldCheck className="w-3 h-3" /> Verified Producer
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#8e8b82] font-mono mt-0.5">
-                    Lead Grower: {displayName} • {displayLocation}
-                  </p>
-                </div>
+        {/* FARMER PROFILE BANNER CARD */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-[#0f0e0c]/90 border border-[#d4af37]/35 backdrop-blur-xl shadow-[0_0_40px_-15px_rgba(212,175,55,0.2)] mb-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-[#1a160e] border-2 border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] text-xl font-serif font-bold shadow-[0_0_20px_rgba(212,175,55,0.25)] shrink-0">
+                {displayName.charAt(0)}
               </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#f5f3eb]">{displayName}</h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#1a2c1d] border border-[#34d399]/40 text-[#34d399] text-[11px] font-mono font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Verified Grower
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#d4af37] font-sans font-medium mt-0.5">{displayFarm}</p>
+                <p className="text-xs text-[#8e8b82] font-sans flex items-center gap-1 mt-1">
+                  <MapPin className="w-3 h-3 text-[#d4af37]" />
+                  <span>{displayLocation}</span>
+                </p>
+              </div>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/farmer-dashboard/post-produce"
-                  id="post-produce-primary-btn"
-                  className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] text-[#0a0a0a] bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] hover:brightness-110 shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] transition-all cursor-pointer"
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <Link
+                to="/farmer-dashboard/post-produce"
+                className="flex-1 lg:flex-none py-3 px-5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)] flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4 text-[#0a0a0a]" />
+                <span>Post New Harvest</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setAddModalOpen(true)}
+                className="py-3 px-4 rounded-xl bg-[#16140e] hover:bg-[#201a0e] border border-[#d4af37]/40 text-[#fae69e] text-xs font-mono font-bold transition-all cursor-pointer"
+              >
+                Quick Add
+              </button>
+            </div>
+          </div>
+
+          {/* KPI METRIC CARDS */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-8 pt-8 border-t border-[#d4af37]/20">
+            {farmerStats.map((stat, idx) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={idx}
+                  className={`p-3.5 rounded-2xl border transition-all ${
+                    stat.highlight
+                      ? 'bg-[#18140c] border-[#d4af37]/60 shadow-[0_0_15px_-5px_rgba(212,175,55,0.3)]'
+                      : 'bg-[#12110c] border-[#d4af37]/20 hover:border-[#d4af37]/40'
+                  }`}
                 >
-                  <Plus className="w-4 h-4 text-[#0a0a0a]" />
-                  <span>List New Produce +</span>
-                </Link>
+                  <div className="flex items-center justify-between text-[#8e8b82] mb-1.5">
+                    <span className="text-[11px] font-mono">{stat.label}</span>
+                    <Icon className="w-3.5 h-3.5 text-[#d4af37]" />
+                  </div>
+                  <div className="font-serif text-lg sm:text-xl font-bold text-[#f5f3eb] truncate">{stat.value}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* TABS NAVIGATION */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="p-1 rounded-2xl bg-[#12110c] border border-[#d4af37]/25 inline-flex font-mono text-xs">
+            <button
+              type="button"
+              onClick={() => setActiveDashboardTab('inventory')}
+              className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                activeDashboardTab === 'inventory'
+                  ? 'bg-[#221c10] text-[#fae69e] border border-[#d4af37]/50 font-bold shadow-sm'
+                  : 'text-[#8e8b82] hover:text-[#f5f3eb]'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Live Inventory ({farmerListings.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveDashboardTab('orders')}
+              className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                activeDashboardTab === 'orders'
+                  ? 'bg-[#221c10] text-[#fae69e] border border-[#d4af37]/50 font-bold shadow-sm'
+                  : 'text-[#8e8b82] hover:text-[#f5f3eb]'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Incoming Orders ({orders.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveDashboardTab('reviews')}
+              className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+                activeDashboardTab === 'reviews'
+                  ? 'bg-[#221c10] text-[#fae69e] border border-[#d4af37]/50 font-bold shadow-sm'
+                  : 'text-[#8e8b82] hover:text-[#f5f3eb]'
+              }`}
+            >
+              <Star className="w-3.5 h-3.5" />
+              <span>Ratings & Reviews ({reviewsStats.totalCount})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 1: INVENTORY MANAGEMENT */}
+        {activeDashboardTab === 'inventory' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h4 className="font-serif text-lg font-bold text-[#f5f3eb]">Your Field Harvest Catalog</h4>
+                <p className="text-xs text-[#8e8b82]">Direct real-time inventory synced to the marketplace</p>
               </div>
+
+              <Link
+                to="/farmer-dashboard/post-produce"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#18150e] border border-[#d4af37]/40 text-[#fae69e] text-xs font-mono font-bold hover:bg-[#201c10] transition-colors"
+              >
+                <span>Add Crop</span>
+                <Plus className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            {/* Stat Tiles Grid (Includes Avg AI Quality & Customer Rating) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
-              {farmerStats.map((stat, idx) => {
-                const IconComp = stat.icon;
-                return (
+            {farmerListings.length === 0 ? (
+              <div className="p-10 rounded-2xl bg-[#12110c] border border-[#d4af37]/20 text-center space-y-3">
+                <Tractor className="w-10 h-10 text-[#d4af37]/50 mx-auto" />
+                <p className="font-serif text-base text-[#f5f3eb]">No harvest produce posted yet</p>
+                <p className="text-xs text-[#8e8b82]">List your crops to start receiving direct fair-trade orders.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {farmerListings.map((prod) => (
                   <div
-                    key={idx}
-                    className={`p-4 rounded-2xl border card-lift-glow-subtle ${
-                      stat.highlight
-                        ? 'bg-[#1c180e] border-[#d4af37]/60 shadow-[0_0_20px_-3px_rgba(212,175,55,0.25)]'
-                        : 'bg-[#14120e] border-[#d4af37]/20 hover:border-[#d4af37]/40'
-                    }`}
+                    key={prod.id}
+                    className="p-4 rounded-2xl bg-[#12110c] border border-[#d4af37]/25 hover:border-[#d4af37]/50 transition-all flex flex-col justify-between gap-4"
                   >
-                    <div className="flex items-center justify-between text-[#8e8b82] mb-1.5">
-                      <span className="text-[10px] font-mono uppercase tracking-wider">{stat.label}</span>
-                      <IconComp className="w-4 h-4 text-[#d4af37]" />
-                    </div>
-                    <div className={`text-lg sm:text-xl font-serif font-bold ${stat.highlight ? 'text-[#fae69e]' : 'text-[#f5f3eb]'}`}>
-                      {stat.value}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Dashboard Section Tabs */}
-            <div className="flex items-center gap-2 border-b border-[#d4af37]/20 pb-2 mb-8 overflow-x-auto">
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('inventory')}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-                  activeDashboardTab === 'inventory'
-                    ? 'bg-[#201a0e] text-[#fae69e] border border-[#d4af37]/50 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
-                    : 'text-[#aba79c] hover:text-[#fcfbf7] hover:bg-[#14120e]'
-                }`}
-              >
-                <Package className="w-3.5 h-3.5 text-[#d4af37]" />
-                <span>Active Inventory & Orders ({activeListings.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('reviews')}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
-                  activeDashboardTab === 'reviews'
-                    ? 'bg-[#201a0e] text-[#fae69e] border border-[#d4af37]/50 shadow-[0_0_15px_rgba(212,175,55,0.2)]'
-                    : 'text-[#aba79c] hover:text-[#fcfbf7] hover:bg-[#14120e]'
-                }`}
-              >
-                <Star className="w-3.5 h-3.5 text-[#d4af37]" />
-                <span>Reviews & Ratings Analytics ({reviewsStats.totalCount})</span>
-              </button>
-            </div>
-
-            {/* TAB 1: ACTIVE INVENTORY & ORDERS */}
-            {activeDashboardTab === 'inventory' && (
-              <>
-                {/* Active Harvest Inventory with AI score badge + star rating inline */}
-                <div className="mb-8">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono uppercase tracking-widest text-[#fae69e] font-semibold">
-                        Active Harvest Listings ({activeListings.length})
-                      </span>
-                      <span className="text-[11px] font-mono text-[#8e8b82]">
-                        • Direct Escrow Protected
-                      </span>
-                    </div>
-                    <Link
-                      to="/farmer-dashboard/post-produce"
-                      className="text-xs font-mono text-[#fae69e] hover:underline flex items-center gap-1 self-start sm:self-auto"
-                    >
-                      <span>Post Another Batch</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    {activeListings.map((prod) => {
-                      const prodStats = getProductStats(prod.id);
-                      const hasAi = Boolean(
-                        prod.aiQualityRating &&
-                        typeof prod.aiQualityRating.qualityScore === 'number' &&
-                        prod.aiQualityRating.qualityScore > 0
-                      );
-
-                      return (
-                        <div
-                          key={prod.id}
-                          className="p-4 rounded-2xl bg-[#14120e] border border-[#d4af37]/25 flex items-start gap-3.5 card-lift-glow-md group"
-                        >
-                          {prod.images && prod.images[0] ? (
-                            <img
-                              src={prod.images[0]}
-                              alt={prod.name}
-                              className="w-16 h-16 rounded-xl object-cover border border-[#d4af37]/30 group-hover:scale-105 transition-transform shrink-0"
-                            />
-                          ) : (
-                            <div className="w-16 h-16 rounded-xl bg-[#1d190e] border border-[#d4af37]/30 flex items-center justify-center text-[#fae69e] shrink-0">
-                              <Package className="w-6 h-6" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#1e190e] text-[#d4af37] border border-[#d4af37]/30 truncate">
-                                {prod.category}
-                              </span>
-                              <span className="text-[10px] font-mono text-[#34d399] font-semibold uppercase">
-                                ● Active
-                              </span>
-                            </div>
-                            <h4 className="text-sm font-serif font-semibold text-[#f5f3eb] truncate mt-1">
-                              {prod.name}
-                            </h4>
-                            <div className="flex items-center justify-between text-xs font-mono mt-1">
-                              <span className="text-[#8e8b82]">
-                                Stock: <strong className="text-[#e8dfca]">{prod.quantity} {prod.unit}</strong>
-                              </span>
-                              <span className="font-bold text-[#fae69e]">
-                                ₹{prod.pricePerUnit}/{prod.unit}
-                              </span>
-                            </div>
-
-                            {/* Dual Mini Status: AI Score Badge + Inline Star Rating */}
-                            <div className="mt-2.5 flex items-center justify-between text-[10px] font-mono text-[#fae69e] pt-1.5 border-t border-[#d4af37]/15 gap-1 flex-wrap">
-                              {/* AI Quality Badge */}
-                              {hasAi ? (
-                                <div className="flex items-center gap-1 bg-[#1d190f] px-1.5 py-0.5 rounded border border-[#d4af37]/40">
-                                  <Bot className="w-3 h-3 text-[#d4af37]" />
-                                  <span>
-                                    AI: <strong>{prod.aiQualityRating!.qualityScore.toFixed(1)}/10</strong>
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-[#8e8b82]">Standard</span>
-                              )}
-
-                              {/* Customer Star Rating */}
-                              <div className="flex items-center gap-1">
-                                {prodStats.totalCount > 0 ? (
-                                  <span className="text-[#fae69e] font-semibold">
-                                    ⭐ {prodStats.average.toFixed(1)} ({prodStats.totalCount})
-                                  </span>
-                                ) : (
-                                  <span className="text-[#8e8b82] text-[10px]">No reviews</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Recent Orders Stream */}
-                <div className="pt-6 border-t border-[#d4af37]/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[#fae69e] font-semibold">
-                      Today's Direct Harvest Orders
-                    </span>
-                    <span className="text-[11px] font-mono text-[#8e8b82]">Auto-settled via Escrow</span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {recentOrders.map((ord, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3.5 rounded-xl bg-[#12110c] border border-[#d4af37]/15 hover:border-[#d4af37]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs font-mono font-bold text-[#d4af37]">{ord.id}</span>
-                          <span className="text-sm text-[#f5f3eb]">{ord.item}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs font-mono">
-                          <span className="text-[#8e8b82]">Buyer: <strong className="text-[#e8dfca] font-normal">{ord.buyer}</strong></span>
-                          <span className="px-2.5 py-0.5 rounded-full bg-[#1c180e] border border-[#d4af37]/30 text-[#34d399] text-[10px]">
-                            {ord.status}
-                          </span>
-                          <span className="font-bold text-[#fae69e]">{ord.amount}</span>
-                        </div>
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#0a0a0a] border border-[#d4af37]/20 shrink-0">
+                        <img
+                          src={prod.images && prod.images[0] ? prod.images[0] : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea'}
+                          alt={prod.name}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* TAB 2: REVIEWS & RATINGS ANALYTICS */}
-            {activeDashboardTab === 'reviews' && (
-              <div className="space-y-6">
-                {/* Overall Rating & Horizontal Bar Breakdown */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-[#0f0e0c] border border-[#d4af37]/35 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                  {/* Left: Overall Average Customer Rating */}
-                  <div className="md:col-span-5 flex flex-col items-center justify-center text-center p-4 rounded-xl bg-[#14120e] border border-[#d4af37]/20">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#8e8b82] mb-1">
-                      Overall Customer Rating
-                    </span>
-                    <div className="font-serif text-4xl sm:text-5xl font-bold text-[#fae69e] tracking-tight">
-                      {reviewsStats.average.toFixed(1)}
-                    </div>
-                    <div className="mt-2">
-                      <StarRating rating={reviewsStats.average} size="lg" />
-                    </div>
-                    <span className="text-xs font-mono text-[#aba79c] mt-2">
-                      Based on {reviewsStats.totalCount} verified reviews
-                    </span>
-                  </div>
-
-                  {/* Right: Horizontal Star Distribution Bars (5★ to 1★) */}
-                  <div className="md:col-span-7 space-y-2 text-xs font-mono">
-                    <div className="text-[11px] font-mono text-[#fae69e] uppercase tracking-wider mb-1">
-                      Rating Breakdown
-                    </div>
-                    {[5, 4, 3, 2, 1].map((star) => {
-                      const count = reviewsStats.distribution[star as 1 | 2 | 3 | 4 | 5] || 0;
-                      const percentage =
-                        reviewsStats.totalCount > 0
-                          ? Math.round((count / reviewsStats.totalCount) * 100)
-                          : 0;
-
-                      return (
-                        <div key={star} className="flex items-center gap-3">
-                          <span className="w-10 text-right text-[11px] flex items-center justify-end gap-1 text-[#e8dfca]">
-                            {star} <Star className="w-3 h-3 text-[#d4af37] fill-[#d4af37]" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#1e190e] text-[#d4af37] border border-[#d4af37]/30">
+                            {prod.category}
                           </span>
-                          <div className="flex-1 h-2.5 rounded-full bg-[#1e1c17] overflow-hidden border border-[#d4af37]/10">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 0.8, ease: 'easeOut' }}
-                              className="h-full bg-gradient-to-r from-[#d4af37] to-[#fae69e] rounded-full"
-                            />
-                          </div>
-                          <span className="w-12 text-[11px] text-[#8e8b82] text-right">
-                            {count} ({percentage}%)
+                          <span
+                            className={`text-[10px] font-mono font-bold ${
+                              prod.status === 'Active' ? 'text-[#34d399]' : 'text-[#8e8b82]'
+                            }`}
+                          >
+                            ● {prod.status}
                           </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Scrollable List of Customer Reviews */}
-                <div className="pt-4 border-t border-[#d4af37]/20">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-mono uppercase tracking-widest text-[#fae69e] font-semibold">
-                      Recent Verified Reviews ({farmerReviews.length})
-                    </span>
-                    <span className="text-[11px] font-mono text-[#34d399]">100% Direct Buyer Verified</span>
-                  </div>
-
-                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                    {farmerReviews.map((rev) => (
-                      <div
-                        key={rev.id}
-                        className="p-4 rounded-xl bg-[#12110c] border border-[#d4af37]/20 hover:border-[#d4af37]/45 transition-colors space-y-2"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-[#fcfbf7]">{rev.customerName}</span>
-                              {rev.verified && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#18261a] text-[#34d399] border border-[#34d399]/30">
-                                  Verified Purchase
-                                </span>
-                              )}
-                            </div>
-                            {rev.produceName && (
-                              <div className="text-[10px] font-mono text-[#d4af37] mt-0.5">
-                                Produce: {rev.produceName}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <StarRating rating={rev.rating} size="xs" />
-                            <span className="text-[10px] font-mono text-[#8e8b82]">{rev.date}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-[#aba79c] font-sans">
-                          "{rev.comment}"
+                        <h5 className="font-serif text-sm font-bold text-[#f5f3eb] mt-1 truncate">{prod.name}</h5>
+                        <p className="font-mono text-xs text-[#fae69e] mt-0.5">
+                          ₹{prod.pricePerUnit} / {prod.unit}
                         </p>
-
-                        <div className="pt-2 border-t border-[#d4af37]/10 flex items-center justify-between text-[10px] font-mono text-[#8e8b82]">
-                          <span>Order ref #AUR-{rev.id.slice(-4).toUpperCase()}</span>
-                          <span className="text-[#fae69e]">★ {rev.rating.toFixed(1)} / 5.0</span>
-                        </div>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className="pt-3 border-t border-[#d4af37]/15 flex items-center justify-between text-xs font-mono">
+                      <span className="text-[#8e8b82]">
+                        Stock: <strong className="text-[#f5f3eb] font-bold">{prod.quantity} {prod.unit}</strong>
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        {prod.status === 'Active' ? (
+                          <button
+                            type="button"
+                            onClick={() => updateListingStatus(prod.id, 'Draft')}
+                            className="px-2 py-1 rounded bg-[#1c180e] border border-[#d4af37]/30 text-[#fae69e] text-[10px] hover:bg-[#251e12]"
+                          >
+                            Pause
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => updateListingStatus(prod.id, 'Active')}
+                            className="px-2 py-1 rounded bg-[#1c180e] border border-[#d4af37]/30 text-[#34d399] text-[10px] hover:bg-[#251e12]"
+                          >
+                            Activate
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => removeListing(prod.id)}
+                          className="p-1 rounded text-[#ef4444] hover:bg-[#ef4444]/10 transition-colors"
+                          title="Delete Listing"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
-        </motion.div>
+        )}
+
+        {/* TAB 2: INCOMING ORDERS MANIFEST */}
+        {activeDashboardTab === 'orders' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-serif text-lg font-bold text-[#f5f3eb]">Live Farm Order Manifest</h4>
+                <p className="text-xs text-[#8e8b82]">Orders placed by consumers for your farm produce</p>
+              </div>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="p-10 rounded-2xl bg-[#12110c] border border-[#d4af37]/20 text-center space-y-3">
+                <ShoppingBag className="w-10 h-10 text-[#d4af37]/50 mx-auto" />
+                <p className="font-serif text-base text-[#f5f3eb]">No orders placed yet</p>
+                <p className="text-xs text-[#8e8b82]">Incoming consumer orders will appear here automatically.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((ord) => (
+                  <div
+                    key={ord.id}
+                    className="p-4 sm:p-5 rounded-2xl bg-[#12110c] border border-[#d4af37]/25 hover:border-[#d4af37]/45 transition-all space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#d4af37]/15">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-mono font-bold text-[#fae69e] bg-[#1d190e] px-2 py-0.5 rounded border border-[#d4af37]/30">
+                          {ord.id}
+                        </span>
+                        <span className="text-xs font-mono text-[#8e8b82]">Buyer: <strong className="text-[#f5f3eb] font-normal">{ord.customerName}</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold border ${
+                            ord.status === 'Placed'
+                              ? 'bg-[#201c10] text-[#fae69e] border-[#d4af37]/50'
+                              : ord.status === 'Delivered'
+                              ? 'bg-[#102416] text-[#34d399] border-[#34d399]/40'
+                              : 'bg-[#1a1f2c] text-[#60a5fa] border-[#60a5fa]/40'
+                          }`}
+                        >
+                          {ord.status}
+                        </span>
+                        <span className="font-mono text-sm font-bold text-[#fae69e]">₹{ord.total}</span>
+                      </div>
+                    </div>
+
+                    {/* Order items */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                      {ord.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-xl bg-[#16140e] border border-[#d4af37]/15 flex items-center justify-between text-xs"
+                        >
+                          <span className="font-serif text-[#f5f3eb] truncate">{item.name}</span>
+                          <span className="font-mono text-[#fae69e] shrink-0 font-medium">
+                            {item.quantity} {item.unit}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action Controls */}
+                    <div className="pt-2 flex items-center justify-between text-xs font-mono text-[#8e8b82]">
+                      <span>Deliver to: {ord.deliveryAddress || 'Farm Pickup'}</span>
+
+                      {ord.status === 'Placed' && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === ord.id}
+                          onClick={() => handleAdvanceStatus(ord.id, ord.status)}
+                          className="px-3 py-1.5 rounded-xl bg-[#201c10] border border-[#d4af37]/50 text-[#fae69e] font-bold hover:bg-[#2d2514] transition-all cursor-pointer"
+                        >
+                          {updatingOrderId === ord.id ? 'Updating...' : 'Start Harvesting →'}
+                        </button>
+                      )}
+
+                      {ord.status === 'Harvesting' && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === ord.id}
+                          onClick={() => handleAdvanceStatus(ord.id, ord.status)}
+                          className="px-3 py-1.5 rounded-xl bg-[#1a2638] border border-[#60a5fa]/50 text-[#93c5fd] font-bold hover:bg-[#203046] transition-all cursor-pointer"
+                        >
+                          {updatingOrderId === ord.id ? 'Updating...' : 'Dispatch Order →'}
+                        </button>
+                      )}
+
+                      {ord.status === 'Dispatched' && (
+                        <button
+                          type="button"
+                          disabled={updatingOrderId === ord.id}
+                          onClick={() => handleAdvanceStatus(ord.id, ord.status)}
+                          className="px-3 py-1.5 rounded-xl bg-[#102416] border border-[#34d399]/50 text-[#34d399] font-bold hover:bg-[#14301d] transition-all cursor-pointer"
+                        >
+                          {updatingOrderId === ord.id ? 'Updating...' : 'Mark Delivered ✓'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: REVIEWS */}
+        {activeDashboardTab === 'reviews' && (
+          <div className="space-y-6">
+            <div className="p-5 rounded-2xl bg-[#0f0e0c] border border-[#d4af37]/35 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              <div className="md:col-span-5 flex flex-col items-center justify-center text-center p-4 rounded-xl bg-[#14120e] border border-[#d4af37]/20">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#8e8b82] mb-1">
+                  Overall Rating
+                </span>
+                <span className="font-serif text-4xl font-bold text-[#fae69e]">{reviewsStats.average.toFixed(1)}</span>
+                <div className="my-2">
+                  <StarRating rating={reviewsStats.average} size="md" />
+                </div>
+                <span className="text-xs text-[#8e8b82] font-mono">From {reviewsStats.totalCount} verified reviews</span>
+              </div>
+
+              <div className="md:col-span-7 space-y-2">
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const count = reviewsStats.distribution[stars as 1 | 2 | 3 | 4 | 5] || 0;
+                  const pct = reviewsStats.totalCount > 0 ? (count / reviewsStats.totalCount) * 100 : 0;
+                  return (
+                    <div key={stars} className="flex items-center gap-3 text-xs font-mono">
+                      <span className="w-12 text-[#8e8b82]">{stars} Stars</span>
+                      <div className="flex-1 h-2 rounded-full bg-[#1c180e] overflow-hidden border border-[#d4af37]/15">
+                        <div className="h-full bg-[#d4af37] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-8 text-right text-[#aba79c]">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Individual Reviews */}
+            <div className="space-y-3">
+              {farmerReviews.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-[#12110c] border border-[#d4af37]/20 text-center text-xs text-[#8e8b82]">
+                  No reviews submitted yet for this grower profile.
+                </div>
+              ) : (
+                farmerReviews.map((rev) => (
+                  <div key={rev.id} className="p-4 rounded-xl bg-[#12110c] border border-[#d4af37]/20 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-serif text-sm font-bold text-[#f5f3eb]">{rev.customerName}</span>
+                      <StarRating rating={rev.rating} size="sm" />
+                    </div>
+                    <p className="text-xs text-[#aba79c] font-sans">"{rev.comment}"</p>
+                    <div className="text-[10px] font-mono text-[#8e8b82] flex items-center justify-between pt-2 border-t border-[#d4af37]/10">
+                      <span>{rev.produceName || 'Direct Farm Harvest'}</span>
+                      <span>{rev.date}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Add Produce Modal */}
+      {/* QUICK ADD MODAL */}
       <AnimatePresence>
         {addModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setAddModalOpen(false)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative z-10 w-full max-w-md rounded-3xl bg-[#0e0d0b] border-2 border-[#d4af37]/40 shadow-[0_0_50px_rgba(212,175,55,0.3)] p-6 sm:p-7"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md p-6 rounded-3xl bg-[#12110c] border border-[#d4af37]/40 shadow-2xl relative space-y-4"
             >
-              <div className="flex items-center justify-between pb-4 mb-5 border-b border-[#d4af37]/20">
-                <div className="flex items-center gap-2.5">
-                  <Package className="w-5 h-5 text-[#fae69e]" />
-                  <h3 className="font-serif text-lg font-bold text-[#fcfbf7]">
-                    List New Harvest Batch
-                  </h3>
-                </div>
+              <div className="flex items-center justify-between pb-3 border-b border-[#d4af37]/20">
+                <h4 className="font-serif text-lg font-bold text-[#f5f3eb]">Quick Post Harvest</h4>
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="p-1 rounded-lg text-[#8e8b82] hover:text-white"
+                  className="p-1 rounded-lg text-[#8e8b82] hover:text-[#f5f3eb]"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {addedSuccess ? (
-                <div className="py-8 text-center space-y-3">
-                  <CheckCircle2 className="w-12 h-12 text-[#34d399] mx-auto animate-bounce" />
-                  <h4 className="font-serif text-xl font-bold text-[#fae69e]">Harvest Listed Successfully!</h4>
-                  <p className="text-xs text-[#aba79c]">Your produce is now visible to direct consumer hubs across your zone.</p>
+                <div className="p-6 text-center space-y-2 text-[#34d399]">
+                  <CheckCircle2 className="w-10 h-10 mx-auto" />
+                  <p className="font-serif text-base font-bold">Produce Published to Marketplace!</p>
                 </div>
               ) : (
-                <form onSubmit={handleAddProduce} className="space-y-4 text-xs font-sans">
+                <form onSubmit={handleAddProduce} className="space-y-3 text-xs font-mono">
                   <div>
-                    <label className="block font-mono uppercase tracking-wider text-[#d4af37] mb-1">
-                      Crop / Product Name *
-                    </label>
+                    <label className="block text-[#aba79c] mb-1">Produce Name</label>
                     <input
                       type="text"
+                      required
                       value={newProduceName}
                       onChange={(e) => setNewProduceName(e.target.value)}
-                      placeholder="e.g. Heirloom Yellow Bell Peppers"
-                      required
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#14120e] border border-[#d4af37]/30 text-[#f5f3eb] placeholder-[#66635c] text-sm focus:outline-none focus:border-[#fae69e]"
+                      placeholder="e.g. Organic Bell Peppers"
+                      className="w-full px-3 py-2 rounded-xl bg-[#1a1710] border border-[#d4af37]/30 text-[#f5f3eb] focus:border-[#d4af37] outline-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-mono uppercase tracking-wider text-[#d4af37] mb-1">
-                        Direct Farm Price *
-                      </label>
+                      <label className="block text-[#aba79c] mb-1">Price per kg (₹)</label>
                       <input
-                        type="text"
+                        type="number"
+                        required
                         value={newProducePrice}
                         onChange={(e) => setNewProducePrice(e.target.value)}
-                        placeholder="e.g. ₹45/kg"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#14120e] border border-[#d4af37]/30 text-[#f5f3eb] placeholder-[#66635c] text-sm focus:outline-none focus:border-[#fae69e]"
+                        placeholder="45"
+                        className="w-full px-3 py-2 rounded-xl bg-[#1a1710] border border-[#d4af37]/30 text-[#f5f3eb] focus:border-[#d4af37] outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-mono uppercase tracking-wider text-[#d4af37] mb-1">
-                        Available Stock *
-                      </label>
+                      <label className="block text-[#aba79c] mb-1">Available Stock (kg)</label>
                       <input
-                        type="text"
+                        type="number"
+                        required
                         value={newProduceQuantity}
                         onChange={(e) => setNewProduceQuantity(e.target.value)}
-                        placeholder="e.g. 60 kg"
-                        required
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-[#14120e] border border-[#d4af37]/30 text-[#f5f3eb] placeholder-[#66635c] text-sm focus:outline-none focus:border-[#fae69e]"
+                        placeholder="100"
+                        className="w-full px-3 py-2 rounded-xl bg-[#1a1710] border border-[#d4af37]/30 text-[#f5f3eb] focus:border-[#d4af37] outline-none"
                       />
                     </div>
                   </div>
 
-                  <div className="pt-3">
-                    <button
-                      type="submit"
-                      className="w-full py-3 rounded-xl font-semibold text-xs uppercase tracking-wider text-[#0a0a0a] bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] hover:brightness-110 transition-all cursor-pointer"
+                  <div>
+                    <label className="block text-[#aba79c] mb-1">Category</label>
+                    <select
+                      value={newProduceCategory}
+                      onChange={(e) => setNewProduceCategory(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#1a1710] border border-[#d4af37]/30 text-[#f5f3eb] focus:border-[#d4af37] outline-none"
                     >
-                      Publish to Direct Marketplace
-                    </button>
+                      <option value="Vegetables">Vegetables</option>
+                      <option value="Fruits">Fruits</option>
+                      <option value="Grains">Grains</option>
+                      <option value="Pulses">Pulses</option>
+                      <option value="Farm Fresh">Farm Fresh</option>
+                    </select>
                   </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[#d4af37] to-[#fae69e] text-[#0a0a0a] font-serif font-bold uppercase tracking-wider hover:brightness-110 transition-all mt-4 cursor-pointer"
+                  >
+                    Publish Harvest Now
+                  </button>
                 </form>
               )}
             </motion.div>
