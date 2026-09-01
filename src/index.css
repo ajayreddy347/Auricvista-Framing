@@ -1,0 +1,182 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #070707;
+    color: #f5f3eb;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: var(--font-display);
+  }
+}
+
+/* Luxury Metallic Gold Gradients */
+.gold-text-metallic {
+  background: linear-gradient(135deg, #ffffff 0%, #fae69e 25%, #d4af37 55%, #9b7617 80%, #f7e49b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-text-pure {
+  background: linear-gradient(180deg, #fdf8e6 0%, #d4af37 70%, #aa821d 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-border-gradient {
+  border-image: linear-gradient(135deg, rgba(255, 235, 160, 0.6) 0%, rgba(212, 175, 55, 0.3) 50%, rgba(138, 99, 15, 0.15) 100%) 1;
+}
+
+/* Radial ambient lighting */
+.gold-ambient-radial {
+  background: radial-gradient(circle at 50% 15%, rgba(212, 175, 55, 0.14) 0%, rgba(201, 162, 39, 0.05) 35%, transparent 70%);
+}
+
+.gold-ambient-secondary {
+  background: radial-gradient(ellipse at 50% 60%, rgba(184, 134, 11, 0.08) 0%, transparent 60%);
+}
+
+/* Subtle micro-grid */
+.bg-subtle-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(212, 175, 55, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(212, 175, 55, 0.035) 1px, transparent 1px);
+}
+
+/* Shimmer and pulse animations */
+@keyframes goldPulseGlow {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes signalBeam {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes particleFloat {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-12px) translateX(6px);
+    opacity: 0.7;
+  }
+}
+
+.animate-gold-glow {
+  animation: goldPulseGlow 8s ease-in-out infinite;
+}
+
+.animate-particle-1 {
+  animation: particleFloat 7s ease-in-out infinite;
+}
+
+.animate-particle-2 {
+  animation: particleFloat 11s ease-in-out infinite 2s;
+}
+
+.animate-particle-3 {
+  animation: particleFloat 9s ease-in-out infinite 4s;
+}
+
+.animated-signal-line {
+  background: linear-gradient(90deg, rgba(212,175,55,0.15) 0%, rgba(255,230,130,0.8) 50%, rgba(212,175,55,0.15) 100%);
+  background-size: 200% 100%;
+  animation: signalBeam 3s linear infinite;
+}
+
+/* ========================================================================= */
+/* LUXURY CARD LIFT & GOLD GLOW TRANSITIONS (Consistent Across All Pages)   */
+/* ========================================================================= */
+
+/* Primary Interactive Product & Farmer Cards */
+.card-lift-glow {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.card-lift-glow:hover {
+  transform: translateY(-8px) scale(1.008);
+  border-color: rgba(212, 175, 55, 0.85) !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.8),
+              0 0 35px 2px rgba(212, 175, 55, 0.35),
+              0 0 70px 8px rgba(212, 175, 55, 0.15),
+              inset 0 0 20px rgba(212, 175, 55, 0.06) !important;
+}
+
+.card-lift-glow:active {
+  transform: translateY(-3px) scale(0.995);
+  transition-duration: 0.15s;
+}
+
+/* Medium Lift & Glow for Modal Produce Cards & Compact Grids */
+.card-lift-glow-md {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.card-lift-glow-md:hover {
+  transform: translateY(-5px) scale(1.005);
+  border-color: rgba(212, 175, 55, 0.75) !important;
+  box-shadow: 0 14px 30px -8px rgba(0, 0, 0, 0.7),
+              0 0 25px 1px rgba(212, 175, 55, 0.3),
+              0 0 50px 4px rgba(212, 175, 55, 0.1) !important;
+}
+
+/* Subtle Lift & Glow for Dashboard Mini-Items / Feed Cards */
+.card-lift-glow-subtle {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.card-lift-glow-subtle:hover {
+  transform: translateY(-3px);
+  border-color: rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.6),
+              0 0 18px 0px rgba(212, 175, 55, 0.25) !important;
+}
+
+.card-lift-glow .card-ambient-glow,
+.card-lift-glow-md .card-ambient-glow {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-lift-glow:hover .card-ambient-glow,
+.card-lift-glow-md:hover .card-ambient-glow {
+  opacity: 1;
+  transform: scale(1.3);
+  background-color: rgba(212, 175, 55, 0.35);
+}
+

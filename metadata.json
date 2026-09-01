@@ -1,0 +1,7 @@
+{
+  "name": "AURICVISTA - Direct Farm",
+  "description": "Luxury AI-powered agricultural network connecting farmers directly to consumers with fair pricing, fresh organic produce, and zero unnecessary intermediaries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
