@@ -189,7 +189,7 @@ export const TrustVerification: React.FC = () => {
             <div className="pt-6 mt-6 border-t border-[#d4af37]/15">
               <span className="text-[11px] font-mono text-[#c9a227] flex items-center justify-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#34d399]" />
-                100% of AuricVista Growers Physically Audited
+                100% of Auric Arohi Growers Physically Audited
               </span>
             </div>
           </motion.div>

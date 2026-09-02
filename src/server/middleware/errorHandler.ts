@@ -19,9 +19,12 @@ export function errorHandler(
     console.error(err.stack);
   }
 
+  const isProduction = process.env.NODE_ENV === 'production';
+  const safeMessage = isProduction && statusCode === 500 ? 'Internal Server Error. Please try again later.' : message;
+
   res.status(statusCode).json({
-    error: message,
-    details: err.details || undefined,
+    error: safeMessage,
+    details: !isProduction ? (err.details || undefined) : undefined,
     timestamp: new Date().toISOString(),
     path: req.originalUrl,
   });

@@ -1,181 +1,108 @@
 import React from 'react';
-import {
-  Wheat,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Facebook,
-  ShieldCheck,
-} from 'lucide-react';
+import { Wheat, ShieldCheck, Globe, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageCode } from '../translations';
 
 export const Footer: React.FC = () => {
-  const footerLinks = {
-    marketplace: [
-      { name: 'Vegetables', href: '/marketplace' },
-      { name: 'Fruits', href: '/marketplace' },
-      { name: 'Grains & Millets', href: '/marketplace' },
-      { name: 'Dairy & Farm Eggs', href: '/marketplace' },
-      { name: 'Seasonal Baskets', href: '/marketplace' },
-    ],
-    company: [
-      { name: 'About AuricVista', href: '/how-it-works' },
-      { name: 'Farmer Impact Story', href: '/impact' },
-      { name: 'Traceability Standard', href: '/farmers' },
-      { name: 'Our Farmers', href: '/farmers' },
-      { name: 'Trust & Verification', href: '/trust' },
-    ],
-    support: [
-      { name: 'Help Center', href: '/trust' },
-      { name: 'Farmer Dashboard', href: '/farmer-dashboard' },
-      { name: 'Customer Portal', href: '/customer-dashboard' },
-      { name: 'Report an Issue', href: '/trust' },
-      { name: 'Terms of Direct Sale', href: '/trust' },
-    ],
-  };
+  const { language, setLanguage, t, supportedLanguages } = useLanguage();
 
   return (
-    <footer id="auricvista-footer" className="relative w-full border-t border-[#d4af37]/25 bg-[#050505] text-[#aba79c] pt-16 pb-12 px-4 sm:px-6 lg:px-12">
+    <footer id="auricarohi-footer" className="relative w-full border-t border-[#d4af37]/25 bg-[#050505] text-[#aba79c] pt-16 pb-12 px-4 sm:px-6 lg:px-12">
       <div className="max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12 pb-14 border-b border-[#d4af37]/15">
-          {/* Left: Logo Wordmark + Tagline */}
-          <div className="md:col-span-4 flex flex-col justify-between">
+          {/* Brand & Mission Column */}
+          <div className="md:col-span-5 flex flex-col justify-between">
             <div>
               <Link to="/" className="inline-flex items-center gap-3 group">
-                <div className="w-9 h-9 rounded-xl bg-[#1d1910] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] group-hover:scale-105 transition-transform shadow-[0_0_15px_-3px_rgba(212,175,55,0.3)]">
+                <div className="w-10 h-10 rounded-xl bg-[#1d1910] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] group-hover:scale-105 transition-transform shadow-[0_0_15px_-3px_rgba(212,175,55,0.3)]">
                   <Wheat className="w-5 h-5" />
                 </div>
                 <span className="font-serif text-2xl font-bold tracking-[0.18em] text-[#fcfbf7] group-hover:text-[#fae69e] transition-colors uppercase">
-                  AURICVISTA
+                  {t('nav.brand', 'AURIC AROHI')}
                 </span>
               </Link>
-              <p className="mt-3 text-sm text-[#8e8b82] font-mono tracking-wider">
-                Direct From the Farm.
+              <p className="mt-3 text-xs font-mono tracking-wider text-[#d4af37] uppercase">
+                {t('nav.tagline', 'Fresh From Farmers. Direct To You.')}
               </p>
-              <p className="mt-4 text-xs text-[#6e6b63] leading-relaxed max-w-sm font-sans">
-                The direct agricultural exchange uniting regenerative regional growers with conscious consumers, restaurants, and wholesale institutions.
+              <p className="mt-4 text-xs text-[#8e8b82] leading-relaxed max-w-md font-sans">
+                {t(
+                  'footer.mission',
+                  'India\'s direct agricultural marketplace connecting local certified growers with conscious consumers. Eliminating middleman markups and delivering morning-fresh organic harvests.'
+                )}
               </p>
             </div>
 
             <div className="mt-6 flex items-center gap-2 text-xs font-mono text-[#c9a227]">
               <ShieldCheck className="w-4 h-4 text-[#34d399]" />
-              <span>Zero-Intermediary Guarantee</span>
+              <span>{t('footer.directGuarantee', 'Direct Farmer-to-Consumer Exchange Protocol')}</span>
             </div>
           </div>
 
-          {/* Middle: Simple Link Columns */}
-          <div className="md:col-span-6 grid grid-cols-2 sm:grid-cols-3 gap-8">
-            {/* Marketplace Column */}
-            <div>
-              <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4">
-                Marketplace
-              </h4>
-              <ul className="space-y-2.5 text-xs font-sans">
-                {footerLinks.marketplace.map((item, idx) => (
-                  <li key={idx}>
-                    <Link
-                      to={item.href}
-                      className="text-[#9e9b92] hover:text-[#fae69e] transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company Column */}
-            <div>
-              <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4">
-                Company
-              </h4>
-              <ul className="space-y-2.5 text-xs font-sans">
-                {footerLinks.company.map((item, idx) => (
-                  <li key={idx}>
-                    <Link
-                      to={item.href}
-                      className="text-[#9e9b92] hover:text-[#fae69e] transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Support Column */}
-            <div>
-              <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4">
-                Support
-              </h4>
-              <ul className="space-y-2.5 text-xs font-sans">
-                {footerLinks.support.map((item, idx) => (
-                  <li key={idx}>
-                    <Link
-                      to={item.href}
-                      className="text-[#9e9b92] hover:text-[#fae69e] transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Quick Links Column */}
+          <div className="md:col-span-3">
+            <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4">
+              {t('footer.quickLinks', 'Quick Links')}
+            </h4>
+            <ul className="space-y-2.5 text-xs font-sans">
+              <li>
+                <Link to="/marketplace" className="text-[#9e9b92] hover:text-[#fae69e] transition-colors">
+                  {t('nav.marketplace', 'Marketplace')}
+                </Link>
+              </li>
+              <li>
+                <Link to="/signup?role=farmer" className="text-[#9e9b92] hover:text-[#fae69e] transition-colors">
+                  {t('footer.becomeFarmer', 'Become a Farmer')}
+                </Link>
+              </li>
+              <li>
+                <a href="#about-auric-arohi" className="text-[#9e9b92] hover:text-[#fae69e] transition-colors">
+                  {t('footer.about', 'About Auric Arohi')}
+                </a>
+              </li>
+              <li>
+                <a href="#how-it-works" className="text-[#9e9b92] hover:text-[#fae69e] transition-colors">
+                  {t('nav.howItWorks', 'How It Works')}
+                </a>
+              </li>
+              <li>
+                <Link to="/trust" className="text-[#9e9b92] hover:text-[#fae69e] transition-colors">
+                  {t('footer.trustStandard', 'Trust & Verification Standard')}
+                </Link>
+              </li>
+            </ul>
           </div>
 
-          {/* Right: Social Icon Placeholders */}
-          <div className="md:col-span-2 flex flex-col justify-between">
-            <div>
-              <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4">
-                Connect
-              </h4>
-              <div className="flex items-center gap-3">
-                <a
-                  href="#instagram"
-                  aria-label="Instagram"
-                  className="w-8 h-8 rounded-lg bg-[#14120e] border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] hover:text-[#fae69e] hover:border-[#fae69e] transition-all"
+          {/* Regional Languages Column */}
+          <div className="md:col-span-4">
+            <h4 className="text-xs font-mono uppercase tracking-[0.2em] text-[#f5f3eb] font-semibold mb-4 flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5 text-[#d4af37]" />
+              <span>{t('nav.language', 'Select Language')}</span>
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {supportedLanguages.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  onClick={() => setLanguage(l.code as LanguageCode)}
+                  className={`p-2 rounded-xl text-left text-xs font-sans flex items-center justify-between border transition-all cursor-pointer ${
+                    language === l.code
+                      ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e] font-bold shadow-sm'
+                      : 'bg-[#12100c] border-[#d4af37]/20 text-[#8e8b82] hover:text-[#f5f3eb] hover:border-[#d4af37]/40'
+                  }`}
                 >
-                  <Instagram className="w-4 h-4" />
-                </a>
-                <a
-                  href="#twitter"
-                  aria-label="Twitter"
-                  className="w-8 h-8 rounded-lg bg-[#14120e] border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] hover:text-[#fae69e] hover:border-[#fae69e] transition-all"
-                >
-                  <Twitter className="w-4 h-4" />
-                </a>
-                <a
-                  href="#linkedin"
-                  aria-label="LinkedIn"
-                  className="w-8 h-8 rounded-lg bg-[#14120e] border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] hover:text-[#fae69e] hover:border-[#fae69e] transition-all"
-                >
-                  <Linkedin className="w-4 h-4" />
-                </a>
-                <a
-                  href="#facebook"
-                  aria-label="Facebook"
-                  className="w-8 h-8 rounded-lg bg-[#14120e] border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] hover:text-[#fae69e] hover:border-[#fae69e] transition-all"
-                >
-                  <Facebook className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <span className="text-[11px] font-mono text-[#6e6b63] block mb-1">
-                HQ: Bengaluru, Karnataka
-              </span>
-              <span className="text-[10px] font-mono text-[#c9a227]">
-                agri-network@auricvista.com
-              </span>
+                  <span className="truncate">{l.nativeName}</span>
+                  {language === l.code && <Check className="w-3.5 h-3.5 text-[#34d399]" />}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Bottom Line, Small Gray Text, Centered */}
+        {/* Bottom Copyright */}
         <div className="pt-8 text-center">
           <p className="text-xs font-mono text-[#66635a]">
-            © 2026 AuricVista. All rights reserved.
+            {t('common.footerText', 'Auric Arohi © 2026. Certified regenerative and natural agriculture.')}
           </p>
         </div>
       </div>

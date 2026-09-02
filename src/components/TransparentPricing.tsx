@@ -38,7 +38,7 @@ export const TransparentPricing: React.FC = () => {
     },
     {
       id: 'platform',
-      label: 'AuricVista Platform',
+      label: 'Auric Arohi Platform',
       sublabel: 'AI Verification & Infrastructure',
       amount: '₹10',
       percentage: 10,

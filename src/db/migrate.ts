@@ -4,61 +4,53 @@ import bcrypt from 'bcryptjs';
 import { query } from './index';
 
 export async function runMigrations(): Promise<void> {
-  console.log('[Database Migration] Initializing PostgreSQL schema for AuricVista Direct Farm...');
-
+  console.log('[Database Migration] Starting schema verification and migration...');
+  
   try {
-    const cwd = process.cwd();
-    const candidates = [
-      path.resolve(cwd, 'src/db/schema.sql'),
-      path.resolve(cwd, 'dist/schema.sql'),
-      path.resolve(cwd, 'schema.sql'),
-    ];
-
+    const primaryPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
+    const secondaryPath = path.join(process.cwd(), 'dist', 'schema.sql');
     let schemaSql = '';
-    for (const p of candidates) {
-      if (fs.existsSync(p)) {
-        schemaSql = fs.readFileSync(p, 'utf8');
-        break;
-      }
-    }
 
-    if (schemaSql) {
-      await query(schemaSql);
-      console.log('[Database Migration] Schema applied successfully.');
+    if (fs.existsSync(primaryPath)) {
+      schemaSql = fs.readFileSync(primaryPath, 'utf8');
+    } else if (fs.existsSync(secondaryPath)) {
+      schemaSql = fs.readFileSync(secondaryPath, 'utf8');
     } else {
-      console.warn('[Database Migration] schema.sql not found; verifying existing tables.');
+      throw new Error('schema.sql file could not be located.');
     }
 
-    // Seed initial data if produce_listings table is empty
-    const produceCheck = await query('SELECT COUNT(*) FROM produce_listings;');
-    const count = parseInt(produceCheck.rows[0].count, 10);
+    // Execute schema statements in a single batch
+    await query(schemaSql);
 
-    if (count === 0) {
-      console.log('[Database Migration] Seeding initial verified farmers and harvest catalog...');
-      await seedInitialData();
-    } else {
-      console.log(`[Database Migration] Database contains ${count} active produce listings. Skipping seed.`);
-    }
+    // Apply incremental column migrations if not present
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS farmer_id VARCHAR(50) UNIQUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS main_crops VARCHAR(255);
+      CREATE INDEX IF NOT EXISTS idx_users_farmer_id ON users(farmer_id);
+    `);
 
-    // Ensure demo farmers have valid password hashes
-    const demoPasswordHash = await bcrypt.hash('FarmPass@2026', 10);
-    await query(
-      `UPDATE users SET password_hash = $1 WHERE password_hash IS NULL;`,
-      [demoPasswordHash]
-    );
+    console.log('[Database Migration] PostgreSQL tables, indexes, and constraints verified successfully.');
+
+    // Seed initial verified farmers, customer and initial produce catalog if tables are empty
+    await seedInitialData();
+
   } catch (err: any) {
-    console.error('[Database Migration Error] Migration failed:', err);
+    console.error('[Database Migration Error]', err.message || err);
     throw err;
   }
 }
 
 async function seedInitialData(): Promise<void> {
   const defaultHash = await bcrypt.hash('FarmPass@2026', 10);
+  const defaultPinHash = await bcrypt.hash('2026', 10);
+  const defaultCustomerHash = await bcrypt.hash('CustPass@2026', 10);
 
   // 1. Seed Verified Farmers (Users & Farmer Profiles)
   const farmers = [
     {
       userId: 'usr-ravi-kumar',
+      farmerId: 'AV-FARM-1001',
       name: 'Ravi Kumar',
       email: 'ravi.kumar@auricvista.farm',
       role: 'farmer',
@@ -66,6 +58,7 @@ async function seedInitialData(): Promise<void> {
       location: 'Chikkaballapur Valley, Karnataka',
       farmName: 'Kumar Organic Heritage Farm #702',
       farmerSlug: 'ravi-kumar',
+      mainCrops: 'Heirloom Vine Tomatoes, Baby Spinach, Golden Carrots',
       experience: '18 years',
       specialty: 'Organic Vine Tomatoes & Bell Peppers',
       acreage: '14 Acres Certified Natural',
@@ -74,6 +67,7 @@ async function seedInitialData(): Promise<void> {
     },
     {
       userId: 'usr-lakshmi-devi',
+      farmerId: 'AV-FARM-1002',
       name: 'Lakshmi Devi',
       email: 'lakshmi.devi@auricvista.farm',
       role: 'farmer',
@@ -81,6 +75,7 @@ async function seedInitialData(): Promise<void> {
       location: 'Kolar Organic Belt, Karnataka',
       farmName: 'Devi Hydroponic Greenhouses',
       farmerSlug: 'lakshmi-devi',
+      mainCrops: 'Hydroponic Greens, Exotic Melons',
       experience: '12 years',
       specialty: 'Hydroponic Greens & Exotic Melons',
       acreage: '8 Acres Precision Soil',
@@ -89,6 +84,7 @@ async function seedInitialData(): Promise<void> {
     },
     {
       userId: 'usr-suresh-naidu',
+      farmerId: 'AV-FARM-1003',
       name: 'Suresh Naidu',
       email: 'suresh.naidu@auricvista.farm',
       role: 'farmer',
@@ -96,6 +92,7 @@ async function seedInitialData(): Promise<void> {
       location: 'Hosur Agro Ridge, Tamil Nadu / Karnataka Border',
       farmName: 'Naidu Heritage Farm',
       farmerSlug: 'suresh-naidu',
+      mainCrops: 'Heritage Millets, Pulses, Desi Dairy',
       experience: '22 years',
       specialty: 'Heritage Millets, Pulses & Desi Dairy',
       acreage: '26 Acres Ancestral Farm',
@@ -106,10 +103,14 @@ async function seedInitialData(): Promise<void> {
 
   for (const f of farmers) {
     await query(
-      `INSERT INTO users (id, name, email, password_hash, role, phone, location, farm_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash WHERE users.password_hash IS NULL;`,
-      [f.userId, f.name, f.email, defaultHash, f.role, f.phone, f.location, f.farmName]
+      `INSERT INTO users (id, farmer_id, name, email, password_hash, pin_hash, role, phone, location, farm_name, main_crops)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (email) DO UPDATE SET 
+         password_hash = EXCLUDED.password_hash,
+         farmer_id = COALESCE(users.farmer_id, EXCLUDED.farmer_id),
+         pin_hash = COALESCE(users.pin_hash, EXCLUDED.pin_hash),
+         main_crops = COALESCE(users.main_crops, EXCLUDED.main_crops);`,
+      [f.userId, f.farmerId, f.name, f.email, defaultHash, defaultPinHash, f.role, f.phone, f.location, f.farmName, f.mainCrops]
     );
 
     await query(
@@ -130,6 +131,23 @@ async function seedInitialData(): Promise<void> {
       ]
     );
   }
+
+  // Seed Default Verified Customer
+  await query(
+    `INSERT INTO users (id, name, email, password_hash, role, phone, location, address)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;`,
+    [
+      'usr-ananya-sharma',
+      'Ananya Sharma',
+      'ananya.sharma@auricvista.farm',
+      defaultCustomerHash,
+      'customer',
+      '+91 98450 12890',
+      'Indiranagar, Bengaluru',
+      'Flat 402, Green Meadows, 12th Main, Indiranagar, Bengaluru',
+    ]
+  );
 
   // 2. Seed Initial Produce Listings
   const initialListings = [
@@ -256,7 +274,7 @@ async function seedInitialData(): Promise<void> {
       produceName: 'Heirloom Vine Tomatoes',
       customerName: 'Ananya Sharma',
       rating: 5.0,
-      comment: 'The heirloom vine tomatoes arrived within 14 hours of dawn harvest. The aroma took me back to my grandparents’ farm in Karnataka. Super juicy with vibrant deep crimson flesh!',
+      comment: "The heirloom vine tomatoes arrived within 14 hours of dawn harvest. The aroma took me back to my grandparents' farm in Karnataka. Super juicy with vibrant deep crimson flesh!",
       verified: true,
       helpfulCount: 24,
     },
@@ -278,7 +296,7 @@ async function seedInitialData(): Promise<void> {
       farmerName: 'Lakshmi Devi',
       customerName: 'Priya Nambiar',
       rating: 5.0,
-      comment: 'Lakshmi Devi’s hydroponic salad greens are the best in Bengaluru. Crisp, immaculate, and stay fresh in the fridge for over a week.',
+      comment: "Lakshmi Devi's hydroponic salad greens are the best in Bengaluru. Crisp, immaculate, and stay fresh in the fridge for over a week.",
       verified: true,
       helpfulCount: 31,
     },

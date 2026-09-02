@@ -16,12 +16,14 @@ export interface FarmerProfileMetadata {
 
 export interface UserProfile {
   id: string;
+  farmerId?: string;
   name: string;
   email: string;
   phone?: string;
   role: UserRole;
   location?: string;
   farmName?: string;
+  mainCrops?: string;
   address?: string;
   createdAt?: string;
   farmerProfile?: FarmerProfileMetadata;
@@ -35,7 +37,19 @@ export interface SignupData {
   phone?: string;
   location?: string;
   farmName?: string;
+  mainCrops?: string;
   address?: string;
+  pin?: string;
+}
+
+export interface FarmerSignupData {
+  name: string;
+  phone: string;
+  location: string;
+  farmName: string;
+  mainCrops: string;
+  pin: string;
+  email?: string;
 }
 
 interface AuthContextType {
@@ -45,7 +59,10 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string, role?: UserRole) => Promise<UserProfile>;
+  farmerLoginPin: (farmerId: string, pin: string) => Promise<UserProfile>;
   signup: (data: SignupData) => Promise<UserProfile>;
+  farmerRegister: (data: FarmerSignupData) => Promise<{ user: UserProfile; farmerId: string }>;
+  resetFarmerPin: (farmerId: string, phone: string, newPin: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
   getAuthHeaders: () => Record<string, string>;
@@ -164,6 +181,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const farmerLoginPin = async (farmerId: string, pin: string): Promise<UserProfile> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerId: farmerId.trim().toUpperCase(),
+          pin: pin.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid Farmer ID or PIN. Please verify your credentials.');
+      }
+
+      setToken(data.token);
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signup = async (data: SignupData): Promise<UserProfile> => {
     setIsLoading(true);
     try {
@@ -185,6 +228,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(resData.token);
       setUser(resData.user);
       return resData.user;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const farmerRegister = async (data: FarmerSignupData): Promise<{ user: UserProfile; farmerId: string }> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/farmer-register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok) {
+        const errorDetail = Array.isArray(resData.details)
+          ? resData.details.join('. ')
+          : resData.error;
+        throw new Error(errorDetail || 'Failed to register farmer account.');
+      }
+
+      setToken(resData.token);
+      setUser(resData.user);
+      return { user: resData.user, farmerId: resData.farmerId };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resetFarmerPin = async (
+    farmerId: string,
+    phone: string,
+    newPin: string
+  ): Promise<{ success: boolean; message: string }> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/reset-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerId: farmerId.trim().toUpperCase(),
+          phone: phone.trim(),
+          newPin: newPin.trim(),
+        }),
+      });
+
+      const resData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(resData.error || 'Failed to reset PIN.');
+      }
+
+      return { success: true, message: resData.message };
     } finally {
       setIsLoading(false);
     }
@@ -222,7 +320,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         login,
+        farmerLoginPin,
         signup,
+        farmerRegister,
+        resetFarmerPin,
         logout,
         updateProfile,
         getAuthHeaders,

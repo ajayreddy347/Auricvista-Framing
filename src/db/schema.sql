@@ -8,19 +8,23 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- 1. USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(100) PRIMARY KEY,
+    farmer_id VARCHAR(50) UNIQUE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255),
+    pin_hash VARCHAR(255),
     role VARCHAR(50) NOT NULL CHECK (role IN ('farmer', 'customer', 'admin')),
     phone VARCHAR(50),
     address TEXT,
     location VARCHAR(255),
     farm_name VARCHAR(255),
+    main_crops VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_farmer_id ON users(farmer_id);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 -- 2. FARMER PROFILES TABLE

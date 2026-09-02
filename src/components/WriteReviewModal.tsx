@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -47,6 +47,17 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Handle image upload / drop
@@ -79,7 +90,7 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
     setPhotos((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -96,9 +107,8 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Add review to store
-      addReview({
+    try {
+      await addReview({
         farmerId,
         farmerName,
         produceId: produceId || undefined,
@@ -107,24 +117,25 @@ export const WriteReviewModal: React.FC<WriteReviewModalProps> = ({
         customerEmail: user?.email,
         rating,
         comment: comment.trim() || 'Exceptional direct harvest produce with outstanding farm freshness.',
-        verified: true, // Customer logged-in verified
+        verified: true,
         photos: photos.length > 0 ? photos : undefined,
       });
 
-      setIsSubmitting(false);
       setShowSuccessToast(true);
 
-      // Trigger success callback and close after toast animation
       setTimeout(() => {
         setShowSuccessToast(false);
         if (onSuccess) onSuccess();
         onClose();
-        // Reset form
         setRating(0);
         setComment('');
         setPhotos([]);
       }, 1200);
-    }, 450);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

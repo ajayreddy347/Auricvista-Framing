@@ -342,8 +342,9 @@ router.post(
   }
 );
 
-// PATCH /api/orders/:id/status - Protected (Farmer/Admin only with crop participation verification)
-router.patch('/:id/status', authenticateToken, async (req: Request, res: Response, next: NextFunction) => {
+// PATCH & PUT /api/orders/:id/status - Protected (Farmer/Admin only with crop participation verification)
+const handleStatusUpdate = async (req: Request, res: Response, next: NextFunction) => {
+  const client = await getClient();
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -356,12 +357,34 @@ router.patch('/:id/status', authenticateToken, async (req: Request, res: Respons
       });
     }
 
-    const orderResult = await query('SELECT * FROM orders WHERE id = $1', [id]);
+    await client.query('BEGIN');
+
+    const orderResult = await client.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [id]);
     if (orderResult.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: `Order ${id} not found` });
     }
 
-    const itemsResult = await query('SELECT * FROM order_items WHERE order_id = $1', [id]);
+    const order = orderResult.rows[0];
+
+    // Strict state transition machine & terminal protection
+    const allowedTransitions: Record<string, string[]> = {
+      Placed: ['Harvesting', 'Cancelled'],
+      Harvesting: ['Dispatched', 'Cancelled'],
+      Dispatched: ['Delivered', 'Cancelled'],
+      Delivered: [], // Terminal
+      Cancelled: [], // Terminal
+    };
+
+    const allowedNext = allowedTransitions[order.order_status] || [];
+    if (!allowedNext.includes(status)) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        error: `Invalid status transition from '${order.order_status}' to '${status}'. Allowed next statuses: ${allowedNext.length > 0 ? allowedNext.join(', ') : 'None (Terminal state)'}`,
+      });
+    }
+
+    const itemsResult = await client.query('SELECT * FROM order_items WHERE order_id = $1', [id]);
     const items = itemsResult.rows;
 
     const isFarmerVendor = items.some(
@@ -371,9 +394,26 @@ router.patch('/:id/status', authenticateToken, async (req: Request, res: Respons
     );
 
     if (user.role !== 'admin' && !isFarmerVendor) {
+      await client.query('ROLLBACK');
       return res.status(403).json({
         error: 'Access denied: Only participating farmers or administrators can update order status.',
       });
+    }
+
+    // If transitioning to Cancelled, restore reserved inventory to produce listings
+    if (status === 'Cancelled') {
+      for (const item of items) {
+        if (item.produce_id) {
+          await client.query(
+            `UPDATE produce_listings
+             SET quantity_available = quantity_available + $1,
+                 status = CASE WHEN status = 'Sold Out' THEN 'Active' ELSE status END,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2`,
+            [parseFloat(item.quantity), item.produce_id]
+          );
+        }
+      }
     }
 
     const updateSql = `
@@ -383,11 +423,19 @@ router.patch('/:id/status', authenticateToken, async (req: Request, res: Respons
       RETURNING *;
     `;
 
-    const result = await query(updateSql, [status, id]);
+    const result = await client.query(updateSql, [status, id]);
+    await client.query('COMMIT');
+
     res.json(formatOrderRow(result.rows[0], items));
   } catch (err) {
+    await client.query('ROLLBACK');
     next(err);
+  } finally {
+    client.release();
   }
-});
+};
+
+router.patch('/:id/status', authenticateToken, handleStatusUpdate);
+router.put('/:id/status', authenticateToken, handleStatusUpdate);
 
 export default router;

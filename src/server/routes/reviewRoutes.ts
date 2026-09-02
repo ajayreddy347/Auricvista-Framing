@@ -41,13 +41,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     if (farmerId && typeof farmerId === 'string') {
       sql += ` AND (LOWER(farmer_id) = LOWER($${paramIdx}) OR LOWER(farmer_name) LIKE $${paramIdx + 1})`;
-      params.push(farmerId, `%${farmerId.toLowerCase()}%`);
+      params.push(farmerId.trim(), `%${farmerId.trim().toLowerCase()}%`);
       paramIdx += 2;
     }
 
     if (produceId && typeof produceId === 'string') {
       sql += ` AND produce_id = $${paramIdx++}`;
-      params.push(produceId);
+      params.push(produceId.trim());
     }
 
     sql += ' ORDER BY created_at DESC';
@@ -59,7 +59,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// POST /api/reviews - Protected (Customer only)
+// POST /api/reviews - Protected (Customer only with server validation)
 router.post(
   '/',
   authenticateToken,
@@ -69,6 +69,37 @@ router.post(
     try {
       const user = req.user!;
       const { farmerId, farmerName, produceId, produceName, rating, comment, verified, photos } = req.body;
+
+      if (!farmerId || typeof farmerId !== 'string') {
+        return res.status(400).json({ error: 'Valid farmer ID or slug is required' });
+      }
+
+      // Check farmer reference in database
+      const farmerCheck = await query(
+        `SELECT fp.farmer_slug, fp.farm_name, u.name as grower_name
+         FROM farmer_profiles fp
+         JOIN users u ON fp.user_id = u.id
+         WHERE fp.farmer_slug = $1 OR fp.id = $1 OR u.id = $1 OR LOWER(u.name) = LOWER($1) OR LOWER(u.email) = LOWER($1)
+         LIMIT 1`,
+        [farmerId.trim()]
+      );
+
+      let verifiedFarmerName = farmerName || 'Verified Regional Grower';
+      let verifiedFarmerId = farmerId.trim();
+
+      if (farmerCheck.rows.length > 0) {
+        verifiedFarmerName = farmerCheck.rows[0].grower_name || farmerName;
+        verifiedFarmerId = farmerCheck.rows[0].farmer_slug || farmerId.trim();
+      }
+
+      // If produceId supplied, verify it exists in produce_listings
+      let verifiedProduceName = produceName || null;
+      if (produceId) {
+        const produceCheck = await query('SELECT name FROM produce_listings WHERE id = $1', [produceId]);
+        if (produceCheck.rows.length > 0) {
+          verifiedProduceName = produceCheck.rows[0].name;
+        }
+      }
 
       const id = `REV-${Date.now().toString().slice(-6)}`;
       const ratingNum = Math.min(5, Math.max(1, parseFloat(rating) || 5));
@@ -86,10 +117,10 @@ router.post(
 
       const result = await query(insertSql, [
         id,
-        farmerId,
-        farmerName || 'Verified Farmer',
+        verifiedFarmerId,
+        verifiedFarmerName,
         produceId || null,
-        produceName || null,
+        verifiedProduceName,
         user.name,
         user.email.toLowerCase(),
         ratingNum,

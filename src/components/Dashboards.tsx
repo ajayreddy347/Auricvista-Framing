@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Sparkles,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Dashboards: React.FC = () => {
   const [modalType, setModalType] = useState<'farmer' | 'customer' | null>(null);
@@ -190,17 +191,18 @@ export const Dashboards: React.FC = () => {
 
             {/* Below Stats: Gold Outlined Button */}
             <div className="pt-6 border-t border-[#d4af37]/15">
-              <button
+              <Link
+                to="/farmer-dashboard"
                 id="add-new-produce-btn"
                 className="w-full group/btn inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-medium uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#14120c]/70 hover:bg-[#d4af37]/15 border border-[#d4af37]/40 hover:border-[#d4af37] transition-all duration-300 cursor-pointer shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)]"
               >
                 <Plus className="w-4 h-4 text-[#d4af37] group-hover/btn:rotate-90 transition-transform duration-300" />
-                <span>Add New Produce +</span>
-              </button>
+                <span>Go to Farmer Portal →</span>
+              </Link>
             </div>
           </motion.div>
 
-          {/* CARD 2 — Customer Dashboard ("My AuricVista") */}
+          {/* CARD 2 — Customer Dashboard ("My Auric Arohi") */}
           <motion.div
             variants={cardVariants}
             id="customer-dashboard-card"
@@ -222,7 +224,7 @@ export const Dashboards: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-[#18150d] border border-[#d4af37]/25 text-[#fae69e]">
-                  "My AuricVista"
+                  "My Auric Arohi"
                 </span>
               </div>
 
@@ -251,13 +253,14 @@ export const Dashboards: React.FC = () => {
 
             {/* Bottom Button */}
             <div className="pt-6 border-t border-[#d4af37]/15">
-              <button
+              <Link
+                to="/customer-dashboard"
                 id="open-customer-portal-btn"
                 className="w-full group/btn inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-medium uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#14120c]/70 hover:bg-[#d4af37]/15 border border-[#d4af37]/40 hover:border-[#d4af37] transition-all duration-300 cursor-pointer shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)]"
               >
-                <span>Access My AuricVista</span>
+                <span>Access Customer Hub</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#d4af37] group-hover/btn:translate-x-1 transition-transform" />
-              </button>
+              </Link>
             </div>
           </motion.div>
         </motion.div>

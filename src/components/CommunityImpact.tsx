@@ -168,7 +168,7 @@ export const CommunityImpact: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              AuricVista Impact
+              Auric Arohi Impact
             </span>
           </motion.h2>
 

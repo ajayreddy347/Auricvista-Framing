@@ -357,13 +357,13 @@ export const TheProblem: React.FC = () => {
               </div>
             </motion.div>
 
-            {/* CARD 2 — AuricVista Direct (Stronger Gold Glow/Border Emphasis) */}
+            {/* CARD 2 — Auric Arohi (Stronger Gold Glow/Border Emphasis) */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] as const }}
-              id="comparison-auricvista-card"
+              id="comparison-auric-arohi-card"
               className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#18150d] via-[#12100b] to-[#0d0c09] border-2 border-[#d4af37]/60 shadow-[0_0_50px_-10px_rgba(212,175,55,0.35)] backdrop-blur-md flex flex-col justify-between group card-lift-glow"
             >
               {/* Highlight Aura Pill */}
@@ -379,7 +379,7 @@ export const TheProblem: React.FC = () => {
                       DIRECT FARM ALLOCATION
                     </span>
                     <h3 className="font-serif text-2xl sm:text-3xl font-semibold gold-text-pure mt-1">
-                      AuricVista Direct
+                      Auric Arohi
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3d3216] to-[#1a160b] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] shadow-[0_0_15px_-2px_rgba(212,175,55,0.4)]">

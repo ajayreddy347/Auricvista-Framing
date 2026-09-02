@@ -45,8 +45,6 @@ interface OrdersContextType {
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
 
-const ORDERS_STORAGE_KEY = 'auricvista_orders_list';
-
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
@@ -55,104 +53,23 @@ function getAuthHeaders(): Record<string, string> {
       headers['Authorization'] = `Bearer ${token}`;
     }
   } catch {
-    // Local storage restricted
+    // Storage restricted
   }
   return headers;
 }
 
-const INITIAL_MOCK_ORDERS: Order[] = [
-  {
-    id: 'AV-2026-00142',
-    createdAt: '2026-08-31T06:30:00.000Z',
-    items: [
-      {
-        productId: 'PROD-101',
-        name: 'Organic Heirloom Vine Tomatoes',
-        image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80',
-        price: 35,
-        quantity: 5,
-        unit: 'kg',
-        farmerName: 'Ravi Kumar',
-      },
-    ],
-    subtotal: 175,
-    deliveryFee: 15,
-    total: 190,
-    deliveryMethod: 'Home Delivery',
-    deliveryAddress: 'Flat 402, Green Meadows, 12th Main, Indiranagar, Bengaluru',
-    preferredDeliveryDate: '2026-09-01',
-    paymentMethod: 'UPI',
-    status: 'Harvesting',
-    customerName: 'Ananya Sharma',
-    customerEmail: 'ananya@example.com',
-    customerPhone: '+91 98450 12890',
-    estimatedDelivery: 'Today 4:30 PM',
-  },
-  {
-    id: 'AV-2026-00139',
-    createdAt: '2026-08-30T10:15:00.000Z',
-    items: [
-      {
-        productId: 'PROD-102',
-        name: 'Hydroponic Salad Greens Box',
-        image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
-        price: 40,
-        quantity: 1,
-        unit: 'bunch',
-        farmerName: 'Lakshmi Devi',
-      },
-      {
-        productId: 'PROD-103',
-        name: 'Heritage Rainbow Carrots',
-        image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=600&q=80',
-        price: 50,
-        quantity: 2,
-        unit: 'kg',
-        farmerName: 'Suresh Naidu',
-      },
-    ],
-    subtotal: 140,
-    deliveryFee: 15,
-    total: 155,
-    deliveryMethod: 'Home Delivery',
-    deliveryAddress: 'Flat 402, Green Meadows, 12th Main, Indiranagar, Bengaluru',
-    preferredDeliveryDate: '2026-08-31',
-    paymentMethod: 'Cash on Delivery',
-    status: 'Delivered',
-    customerName: 'Ananya Sharma',
-    customerEmail: 'ananya@example.com',
-    customerPhone: '+91 98450 12890',
-    estimatedDelivery: 'Delivered Yesterday',
-  },
-];
-
 export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [orders, setOrders] = useState<Order[]>(() => {
-    try {
-      const saved = localStorage.getItem(ORDERS_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {
-      // Fallback
-    }
-    return INITIAL_MOCK_ORDERS;
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
-    } catch {
-      // Storage restricted
-    }
-  }, [orders]);
 
   const refreshOrders = useCallback(async () => {
     const token = localStorage.getItem('auricvista_auth_token');
-    if (!token) return;
+    if (!token) {
+      setOrders([]);
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -165,10 +82,13 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (Array.isArray(data)) {
           setOrders(data);
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || 'Failed to load orders from server');
       }
     } catch (err: any) {
-      console.warn('Orders loaded from local cache:', err.message);
-      setError('Offline mode: Using cached orders');
+      console.error('Failed to fetch orders:', err);
+      setError('Unable to reach orders service. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
@@ -188,7 +108,7 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const data = await res.json();
 
     if (!res.ok) {
-      const errorMsg = data.error || 'Failed to place order. Please try again.';
+      const errorMsg = data.error || (Array.isArray(data.details) ? data.details.join('. ') : 'Failed to place order.');
       throw new Error(errorMsg);
     }
 
@@ -202,26 +122,21 @@ export const OrdersProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const updateOrderStatus = async (id: string, status: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status } : o))
-    );
+    const res = await fetch(`/api/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status }),
+    });
 
-    try {
-      const res = await fetch(`/api/orders/${id}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ status }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setOrders((prev) =>
-          prev.map((o) => (o.id === id ? { ...updated } : o))
-        );
-      }
-    } catch (err) {
-      console.warn('Status updated locally, backend sync failed:', err);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `Failed to update order ${id} status`);
     }
+
+    const updated: Order = await res.json();
+    setOrders((prev) =>
+      prev.map((o) => (o.id === id ? { ...updated } : o))
+    );
   };
 
   return (

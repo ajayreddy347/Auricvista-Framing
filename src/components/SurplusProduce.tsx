@@ -166,7 +166,7 @@ export const SurplusProduce: React.FC = () => {
             id="surplus-ecosystem-line"
             className="text-xs sm:text-sm text-[#8e8b82] font-sans max-w-2xl mx-auto leading-relaxed"
           >
-            Part of the larger AuricVista ecosystem — connecting farms, food donation, and food recycling.
+            Part of the larger Auric Arohi ecosystem — connecting farms, food donation, and food recycling.
           </p>
         </motion.div>
       </div>

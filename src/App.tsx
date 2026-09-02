@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { ProduceProvider } from './context/ProduceContext';
 import { ReviewsProvider } from './context/ReviewsContext';
@@ -12,6 +13,7 @@ import { CartProvider } from './context/CartContext';
 import { OrdersProvider } from './context/OrdersContext';
 import { Header } from './components/Header';
 import { CartDrawer } from './components/CartDrawer';
+import { FloatingAIAssistant } from './components/FloatingAIAssistant';
 import { ScrollToTop } from './components/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -33,75 +35,80 @@ import { OrderConfirmedPage } from './pages/OrderConfirmedPage';
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ProduceProvider>
-        <ReviewsProvider>
-          <CartProvider>
-            <OrdersProvider>
-              <Router>
-                <ScrollToTop />
-                <div className="min-h-screen bg-[#070707] text-[#f5f3eb] flex flex-col font-sans selection:bg-[#d4af37]/30 selection:text-[#fae69e]">
-                  {/* Brand Sticky Header with Role Auth State */}
-                  <Header />
+    <LanguageProvider>
+      <AuthProvider>
+        <ProduceProvider>
+          <ReviewsProvider>
+            <CartProvider>
+              <OrdersProvider>
+                <Router>
+                  <ScrollToTop />
+                  <div className="min-h-screen bg-[#070707] text-[#f5f3eb] flex flex-col font-sans selection:bg-[#d4af37]/30 selection:text-[#fae69e] relative">
+                    {/* Brand Sticky Header with Role Auth State & Language Selector */}
+                    <Header />
 
-                  {/* Slide-in Cart Panel */}
-                  <CartDrawer />
+                    {/* Slide-in Cart Panel */}
+                    <CartDrawer />
 
-                  {/* Dynamic Route Pages */}
-                  <main className="flex-1 flex flex-col">
-                    <ErrorBoundary>
-                      <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/marketplace" element={<MarketplacePage />} />
-                        <Route path="/farmers" element={<FarmersPage />} />
-                        <Route path="/how-it-works" element={<HowItWorksPage />} />
-                        <Route path="/impact" element={<ImpactPage />} />
-                        <Route path="/trust" element={<TrustPage />} />
+                    {/* Global Floating AI Assistant Button */}
+                    <FloatingAIAssistant />
 
-                        {/* Farmer Protected Routes */}
-                        <Route
-                          path="/farmer-dashboard"
-                          element={
-                            <ProtectedRoute allowedRoles={['farmer']}>
-                              <FarmerDashboardPage />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route
-                          path="/farmer-dashboard/post-produce"
-                          element={
-                            <ProtectedRoute allowedRoles={['farmer']}>
-                              <PostProducePage />
-                            </ProtectedRoute>
-                          }
-                        />
+                    {/* Dynamic Route Pages */}
+                    <main className="flex-1 flex flex-col">
+                      <ErrorBoundary>
+                        <Routes>
+                          <Route path="/" element={<HomePage />} />
+                          <Route path="/marketplace" element={<MarketplacePage />} />
+                          <Route path="/farmers" element={<FarmersPage />} />
+                          <Route path="/how-it-works" element={<HowItWorksPage />} />
+                          <Route path="/impact" element={<ImpactPage />} />
+                          <Route path="/trust" element={<TrustPage />} />
 
-                        {/* Customer Protected Routes */}
-                        <Route
-                          path="/customer-dashboard"
-                          element={
-                            <ProtectedRoute allowedRoles={['customer']}>
-                              <CustomerDashboardPage />
-                            </ProtectedRoute>
-                          }
-                        />
+                          {/* Farmer Protected Routes */}
+                          <Route
+                            path="/farmer-dashboard"
+                            element={
+                              <ProtectedRoute allowedRoles={['farmer']}>
+                                <FarmerDashboardPage />
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/farmer-dashboard/post-produce"
+                            element={
+                              <ProtectedRoute allowedRoles={['farmer']}>
+                                <PostProducePage />
+                              </ProtectedRoute>
+                            }
+                          />
 
-                        <Route path="/checkout" element={<CheckoutPage />} />
-                        <Route path="/order-confirmed" element={<OrderConfirmedPage />} />
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/signup" element={<SignupPage />} />
+                          {/* Customer Protected Routes */}
+                          <Route
+                            path="/customer-dashboard"
+                            element={
+                              <ProtectedRoute allowedRoles={['customer']}>
+                                <CustomerDashboardPage />
+                              </ProtectedRoute>
+                            }
+                          />
 
-                        {/* Fallback route back to home */}
-                        <Route path="*" element={<HomePage />} />
-                      </Routes>
-                    </ErrorBoundary>
-                  </main>
-                </div>
-              </Router>
-            </OrdersProvider>
-          </CartProvider>
-        </ReviewsProvider>
-      </ProduceProvider>
-    </AuthProvider>
+                          <Route path="/checkout" element={<CheckoutPage />} />
+                          <Route path="/order-confirmed" element={<OrderConfirmedPage />} />
+                          <Route path="/login" element={<LoginPage />} />
+                          <Route path="/signup" element={<SignupPage />} />
+
+                          {/* Fallback route back to home */}
+                          <Route path="*" element={<HomePage />} />
+                        </Routes>
+                      </ErrorBoundary>
+                    </main>
+                  </div>
+                </Router>
+              </OrdersProvider>
+            </CartProvider>
+          </ReviewsProvider>
+        </ProduceProvider>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

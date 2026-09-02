@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
@@ -38,6 +38,7 @@ export interface FarmerProfileData {
   acreage: string;
   initials: string;
   highlightBadge: string;
+  farmerId?: string;
 }
 
 interface FarmerProfileModalProps {
@@ -59,6 +60,17 @@ export const FarmerProfileModal: React.FC<FarmerProfileModalProps> = ({
   const [filterRating, setFilterRating] = useState<number | 'all'>('all');
   const [activeTab, setActiveTab] = useState<'reviews' | 'harvests' | 'about'>('reviews');
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!farmer) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [farmer, onClose]);
 
   if (!farmer) return null;
 
@@ -155,6 +167,11 @@ export const FarmerProfileModal: React.FC<FarmerProfileModalProps> = ({
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#201a0e] text-[#fae69e] border border-[#d4af37]/30">
                     {farmer.highlightBadge}
                   </span>
+                  {farmer.farmerId && (
+                    <span className="text-[11px] font-mono font-bold text-[#fae69e] bg-[#241c0e] px-2.5 py-0.5 rounded-md border border-[#d4af37]/60 shadow-sm flex items-center gap-1">
+                      <span className="text-[#a89244] font-semibold">Farmer ID:</span> {farmer.farmerId}
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-[#fcfbf7] tracking-tight">

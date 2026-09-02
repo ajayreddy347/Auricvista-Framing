@@ -1,8 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Hero } from '../components/Hero';
-import { TheProblem } from '../components/TheProblem';
+import { AboutSection } from '../components/AboutSection';
 import { HowItWorks } from '../components/HowItWorks';
+import { ImpactSection } from '../components/ImpactSection';
+import { WhyChooseSection } from '../components/WhyChooseSection';
+import { AIAssistant } from '../components/AIAssistant';
 import { FinalCTA } from '../components/FinalCTA';
 import { Footer } from '../components/Footer';
 
@@ -16,8 +19,11 @@ export const HomePage: React.FC = () => {
       className="min-h-screen bg-[#070707] text-[#fcfbf7]"
     >
       <Hero />
-      <TheProblem />
+      <AboutSection />
       <HowItWorks />
+      <WhyChooseSection />
+      <AIAssistant />
+      <ImpactSection />
       <FinalCTA />
       <Footer />
     </motion.div>

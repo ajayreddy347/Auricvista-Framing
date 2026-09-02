@@ -23,6 +23,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         u.name as "growerName",
         u.email,
         u.phone,
+        u.farmer_id as "farmerId",
         COALESCE(COUNT(DISTINCT pl.id), 0) as "activeListingsCount",
         COALESCE(AVG(r.rating), 4.9) as "averageRating",
         COALESCE(COUNT(DISTINCT r.id), 0) as "reviewsCount"
@@ -32,7 +33,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       LEFT JOIN reviews r ON (r.farmer_id = fp.farmer_slug OR LOWER(r.farmer_name) = LOWER(u.name))
       GROUP BY fp.id, fp.farmer_slug, fp.farm_name, fp.location, fp.latitude, fp.longitude,
                fp.experience, fp.specialty, fp.acreage, fp.highlight_badge, fp.description,
-               fp.verification_status, u.name, u.email, u.phone
+               fp.verification_status, u.name, u.email, u.phone, u.farmer_id
       ORDER BY fp.created_at ASC;
     `;
 
@@ -64,7 +65,8 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         fp.verification_status as "verificationStatus",
         u.name as "growerName",
         u.email,
-        u.phone
+        u.phone,
+        u.farmer_id as "farmerId"
       FROM farmer_profiles fp
       JOIN users u ON fp.user_id = u.id
       WHERE fp.id = $1 OR fp.farmer_slug = $1 OR u.id = $1;

@@ -27,7 +27,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('AuricVista ErrorBoundary caught an unhandled error:', error, errorInfo);
+    console.error('Auric Arohi ErrorBoundary caught an unhandled error:', error, errorInfo);
     this.setState({ errorInfo });
   }
 

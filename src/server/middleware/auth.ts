@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'AuricVista_Default_Dev_Secret_Key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'Auric Arohi_Default_Dev_Secret_Key_2026';
 
 export interface AuthUser {
   id: string;

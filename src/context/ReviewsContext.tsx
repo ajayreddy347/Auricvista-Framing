@@ -42,8 +42,6 @@ interface ReviewsContextType {
   toggleHelpful: (reviewId: string) => void;
 }
 
-const STORAGE_KEY = 'auricvista_customer_reviews';
-
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
@@ -57,76 +55,12 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-const INITIAL_MOCK_REVIEWS: CustomerReview[] = [
-  {
-    id: 'rev-rk-1',
-    farmerId: 'ravi-kumar',
-    farmerName: 'Ravi Kumar',
-    produceId: 'PROD-101',
-    produceName: 'Heirloom Vine Tomatoes',
-    customerName: 'Ananya Sharma',
-    rating: 5,
-    comment:
-      'The heirloom vine tomatoes arrived within 14 hours of dawn harvest. The aroma took me back to my grandparents farm in Karnataka. Super juicy with vibrant deep crimson flesh!',
-    date: '2026-08-28',
-    verified: true,
-    photos: ['https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&q=80&w=400'],
-    helpfulCount: 24,
-  },
-  {
-    id: 'rev-rk-2',
-    farmerId: 'ravi-kumar',
-    farmerName: 'Ravi Kumar',
-    produceId: 'PROD-102',
-    produceName: 'Hydroponic Baby Spinach',
-    customerName: 'Vikramaditya Sengupta',
-    rating: 5,
-    comment:
-      'The hydroponic baby spinach had crisp, unbruised leaves with zero pesticide residue. You can taste the purity right in raw salads.',
-    date: '2026-08-25',
-    verified: true,
-    photos: ['https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=80&w=400'],
-    helpfulCount: 18,
-  },
-  {
-    id: 'rev-ld-1',
-    farmerId: 'lakshmi-devi',
-    farmerName: 'Lakshmi Devi',
-    customerName: 'Priya Nambiar',
-    rating: 5,
-    comment:
-      'Lakshmi Devi’s hydroponic salad greens are the best in Bengaluru. Crisp, immaculate, and stay fresh in the fridge for over a week.',
-    date: '2026-08-20',
-    verified: true,
-    helpfulCount: 31,
-  },
-];
-
 const ReviewsContext = createContext<ReviewsContextType | undefined>(undefined);
 
 export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [reviews, setReviews] = useState<CustomerReview[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {
-      // Fallback
-    }
-    return INITIAL_MOCK_REVIEWS;
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
-    } catch {
-      // Storage restricted
-    }
-  }, [reviews]);
 
   const refreshReviews = useCallback(async () => {
     setIsLoading(true);
@@ -138,10 +72,13 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (Array.isArray(data)) {
           setReviews(data);
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || 'Failed to load reviews from server');
       }
     } catch (err: any) {
-      console.warn('Reviews loaded from cache:', err.message);
-      setError('Offline mode: Using cached reviews');
+      console.error('Failed to fetch reviews:', err);
+      setError('Unable to reach reviews service. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +90,7 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const getFarmerReviews = useCallback(
     (farmerId: string) => {
-      const normId = farmerId.toLowerCase();
+      const normId = farmerId.toLowerCase().trim();
       return reviews.filter(
         (r) =>
           r.farmerId.toLowerCase() === normId ||
@@ -168,7 +105,7 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const farmerReviews = getFarmerReviews(farmerId);
       if (farmerReviews.length === 0) {
         return {
-          average: 4.9,
+          average: 5.0,
           totalCount: 0,
           distribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
         };
@@ -205,7 +142,7 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     (produceId: string) => {
       const productReviews = getProductReviews(produceId);
       if (productReviews.length === 0) {
-        return { average: 4.9, totalCount: 12 };
+        return { average: 5.0, totalCount: 0 };
       }
       const sum = productReviews.reduce((acc, r) => acc + r.rating, 0);
       return {
@@ -217,36 +154,22 @@ export const ReviewsProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const addReview = async (data: Omit<CustomerReview, 'id' | 'date'>): Promise<CustomerReview> => {
-    const tempId = `REV-${Date.now().toString().slice(-6)}`;
-    const newReview: CustomerReview = {
-      ...data,
-      id: tempId,
-      date: new Date().toISOString().split('T')[0],
-      helpfulCount: 0,
-      isUserReviewed: true,
-    };
+    const res = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
 
-    setReviews((prev) => [newReview, ...prev]);
+    const result = await res.json();
 
-    try {
-      const res = await fetch('/api/reviews', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-      });
-
-      if (res.ok) {
-        const saved = await res.json();
-        setReviews((prev) =>
-          prev.map((r) => (r.id === tempId ? { ...saved, isUserReviewed: true } : r))
-        );
-        return saved;
-      }
-    } catch (err) {
-      console.warn('Review saved locally, backend sync failed:', err);
+    if (!res.ok) {
+      const errorMsg = result.error || (Array.isArray(result.details) ? result.details.join('. ') : 'Failed to submit review');
+      throw new Error(errorMsg);
     }
 
-    return newReview;
+    const saved: CustomerReview = { ...result, isUserReviewed: true };
+    setReviews((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
+    return saved;
   };
 
   const toggleHelpful = (reviewId: string) => {

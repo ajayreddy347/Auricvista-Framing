@@ -45,7 +45,7 @@ export const FinalCTAAndFooter: React.FC = () => {
       { name: 'Seasonal Baskets', href: '#smart-cart-section' },
     ],
     company: [
-      { name: 'About AuricVista', href: '#' },
+      { name: 'About Auric Arohi', href: '#' },
       { name: 'Farmer Impact Story', href: '#community-impact-section' },
       { name: 'Traceability Standard', href: '#traceability-section' },
       { name: 'Careers & Fellows', href: '#' },
@@ -159,7 +159,7 @@ export const FinalCTAAndFooter: React.FC = () => {
                     <Wheat className="w-5 h-5" />
                   </div>
                   <span className="font-serif text-2xl font-bold tracking-[0.18em] text-[#fcfbf7] group-hover:text-[#fae69e] transition-colors uppercase">
-                    AURICVISTA
+                    AURIC AROHI
                   </span>
                 </a>
                 <p className="mt-3 text-sm text-[#8e8b82] font-mono tracking-wider">
@@ -279,7 +279,7 @@ export const FinalCTAAndFooter: React.FC = () => {
                   HQ: Bengaluru, Karnataka
                 </span>
                 <span className="text-[10px] font-mono text-[#c9a227]">
-                  agri-network@auricvista.com
+                  support@auricarohi.farm
                 </span>
               </div>
             </div>
@@ -288,7 +288,7 @@ export const FinalCTAAndFooter: React.FC = () => {
           {/* Bottom Line, Small Gray Text, Centered */}
           <div className="pt-8 text-center">
             <p className="text-xs font-mono text-[#66635a]">
-              © 2026 AuricVista. All rights reserved.
+              © 2026 Auric Arohi. All rights reserved.
             </p>
           </div>
         </div>

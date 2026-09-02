@@ -42,6 +42,7 @@ function formatProduceRow(row: any) {
     farmLocation: row.farm_location,
     farmerName: row.farmer_name,
     farmerEmail: row.farmer_email,
+    farmerId: row.display_farmer_id || row.farmer_id || undefined,
     description: row.description || '',
     images,
     status: row.status,
@@ -55,7 +56,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { category, search, status, farmerEmail, sortBy } = req.query;
 
-    let sql = 'SELECT * FROM produce_listings WHERE 1=1';
+    let sql = `
+      SELECT p.*, COALESCE(u.farmer_id, p.farmer_id) AS display_farmer_id
+      FROM produce_listings p
+      LEFT JOIN users u ON (p.farmer_id = u.id OR LOWER(p.farmer_email) = LOWER(u.email))
+      WHERE 1=1
+    `;
     const params: any[] = [];
     let paramIdx = 1;
 

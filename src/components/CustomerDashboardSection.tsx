@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
@@ -6,406 +6,596 @@ import {
   Heart,
   BookmarkCheck,
   Calendar,
-  Navigation,
   CreditCard,
   Sparkles,
   ArrowRight,
   ShieldCheck,
   Clock,
-  LogIn,
   MapPin,
   Star,
   MessageSquare,
   Truck,
   Tractor,
   CheckCircle2,
+  Package,
+  Check,
+  X,
+  Eye,
+  RefreshCw,
+  SlidersHorizontal,
+  ChevronRight,
+  AlertCircle,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useOrders } from '../context/OrdersContext';
+import { useOrders, Order, OrderStatus } from '../context/OrdersContext';
+import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import { WriteReviewModal } from './WriteReviewModal';
+import { FarmerProfileModal, FarmerProfileData } from './FarmerProfileModal';
+import { getProduceImage } from '../utils/produceImages';
 
 export const CustomerDashboardSection: React.FC = () => {
   const { isLoggedIn, userRole, user } = useAuth();
-  const { orders } = useOrders();
-  const [selectedTab, setSelectedTab] = useState<'All' | 'Active' | 'Delivered'>('All');
+  const { orders, isLoading } = useOrders();
+  const { addToCart, openCart } = useCart();
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const [selectedTab, setSelectedTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+  const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfileData | null>(null);
   const [reviewModalData, setReviewModalData] = useState<{
     farmerId: string;
     farmerName: string;
     produceName?: string;
   } | null>(null);
 
-  const customerItems = [
-    { label: 'My Orders', icon: ShoppingBag, desc: 'Real-time live harvest status & manifests', value: `${orders.length} Orders` },
-    { label: 'Saved Farmers', icon: BookmarkCheck, desc: 'Direct access to your trusted growers', value: '5 Saved' },
-    { label: 'Favourite Products', icon: Heart, desc: 'One-click seasonal replenishment', value: '14 Items' },
-    { label: 'Subscriptions', icon: Calendar, desc: 'Weekly farm basket schedule & cadence', value: 'Weekly Active' },
-    { label: 'Delivery Tracking', icon: Navigation, desc: 'Farm-to-doorstep live temperature sensor', value: 'On Route' },
-    { label: 'Wallet / Escrow', icon: CreditCard, desc: 'Direct escrow balances & instant payouts', value: '₹1,240' },
-  ];
+  // Real Customer Name & Profile Data
+  const displayName = user?.name || 'Ananya Sharma';
+  const displayEmail = user?.email || 'customer@auricvista.farm';
+  const displayLocation = user?.location || 'Bengaluru, Karnataka';
 
-  const recentPurchases = [
-    { id: 'REC-901', farm: 'Ravi Kumar (Chikkaballapur)', item: 'Fresh Vine Tomatoes (5 kg)', status: 'Harvested this morning', eta: 'Delivery today 4:30 PM' },
-    { id: 'REC-902', farm: 'Lakshmi Devi (Kolar)', item: 'Hydroponic Salad Greens Box (1 kg)', status: 'Dispatched', eta: 'Delivery today 5:00 PM' },
-  ];
+  // Compute live summary numbers from real PostgreSQL orders
+  const totalOrdersCount = orders.length;
+  const activeOrders = orders.filter((o) => o.status !== 'Delivered' && o.status !== 'Cancelled');
+  const deliveredOrders = orders.filter((o) => o.status === 'Delivered');
+  const cancelledOrders = orders.filter((o) => o.status === 'Cancelled');
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.12,
-      },
-    },
+  // Filter orders by selected tab
+  const filteredOrders = useMemo(() => {
+    if (selectedTab === 'active') return activeOrders;
+    if (selectedTab === 'delivered') return deliveredOrders;
+    if (selectedTab === 'cancelled') return cancelledOrders;
+    return orders;
+  }, [orders, selectedTab, activeOrders, deliveredOrders, cancelledOrders]);
+
+  // Order lifecycle step calculation
+  const getStepNumber = (status: OrderStatus) => {
+    switch (status) {
+      case 'Placed':
+        return 1;
+      case 'Harvesting':
+        return 2;
+      case 'Dispatched':
+        return 3;
+      case 'Delivered':
+        return 4;
+      default:
+        return 1;
+    }
   };
 
-  const itemFadeUp = {
-    hidden: { opacity: 0, y: 24 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.7,
-        ease: [0.16, 1, 0.3, 1] as const,
-      },
-    },
-  };
+  const stepsList = [
+    { key: 'Placed', label: t('order.placed', 'Placed'), icon: ShoppingBag },
+    { key: 'Harvesting', label: t('order.harvesting', 'Harvesting'), icon: Tractor },
+    { key: 'Dispatched', label: t('order.dispatched', 'Dispatched'), icon: Truck },
+    { key: 'Delivered', label: t('order.delivered', 'Delivered'), icon: CheckCircle2 },
+  ];
 
-  const displayName = isLoggedIn && user?.role === 'customer' ? user.name : 'Ananya Sharma';
-  const displayAddress = isLoggedIn && user?.role === 'customer' && (user.address || user.location)
-    ? (user.address || user.location)
-    : 'Indiranagar, Bengaluru • Zone 2';
+  const handleOpenFarmerProfile = (farmerName: string, farmerId?: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const farmerSlug = farmerName.toLowerCase().includes('ravi')
+      ? 'ravi-kumar'
+      : farmerName.toLowerCase().includes('lakshmi')
+      ? 'lakshmi-devi'
+      : 'suresh-naidu';
+
+    setSelectedFarmer({
+      id: farmerSlug,
+      name: farmerName,
+      farmerId: farmerId || (farmerName.toLowerCase().includes('ravi') ? 'AV-FARM-1001' : 'AV-FARM-1002'),
+      role: 'Verified Direct Grower',
+      location: 'Karnataka Farmlands',
+      experience: '12+ Years Natural Cultivation',
+      specialty: 'Farm Fresh Produce',
+      acreage: '8 Acres Heritage Soil',
+      initials: farmerName.split(' ').map((n) => n[0]).join(''),
+      highlightBadge: 'Direct Producer',
+    });
+  };
 
   return (
     <section
       id="customer-dashboard-section"
-      className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-[#070707] overflow-hidden"
+      className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#070707] text-[#fcfbf7] min-h-screen border-t border-[#d4af37]/15"
     >
-      {/* Background ambient lighting */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[550px] rounded-full gold-ambient-radial blur-3xl opacity-35" />
-        <div className="absolute inset-0 bg-subtle-grid opacity-30 mask-gradient" />
-      </div>
-
-      <div className="relative z-10 max-w-6xl mx-auto w-full">
-        {/* ========================================================================= */}
-        {/* SECTION HEADER & TITLE */}
-        {/* ========================================================================= */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-80px' }}
-          variants={containerVariants}
-          className="text-center max-w-3xl mx-auto"
-        >
-          <motion.div variants={itemFadeUp} className="mb-5 inline-block">
-            <div
-              id="customer-dash-pill"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#14120c]/80 border border-[#d4af37]/30 backdrop-blur-md shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)]"
-            >
-              <User className="w-3.5 h-3.5 text-[#d4af37]" />
-              <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Consumer Hub • "My AuricVista"
-              </span>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* 1. CUSTOMER WELCOME HEADER */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-[#18140e] via-[#12100c] to-[#0c0b08] border-2 border-[#d4af37]/40 shadow-[0_0_40px_-10px_rgba(212,175,55,0.25)]">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#241d10] border-2 border-[#d4af37]/60 flex items-center justify-center text-[#fae69e] text-2xl font-serif font-bold shadow-[0_0_20px_rgba(212,175,55,0.3)] shrink-0">
+                {displayName.charAt(0)}
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#fcfbf7]">
+                    {t('dash.welcome', 'Welcome')}, {displayName}
+                  </h1>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#102414] border border-[#34d399]/40 text-[#34d399] text-[11px] font-mono font-medium">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {t('nav.roleCustomer', 'Verified Patron')}
+                  </span>
+                </div>
+                <p className="text-xs text-[#aba79c] font-sans">
+                  {t('dash.customerSubtitle', 'Discover fresh produce directly from Indian farmers.')}
+                </p>
+                <div className="flex items-center gap-3 text-xs font-mono text-[#8e8b82] pt-1">
+                  <span>{displayEmail}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-[#d4af37]" />
+                    {displayLocation}
+                  </span>
+                </div>
+              </div>
             </div>
-          </motion.div>
 
-          <motion.h1
-            variants={itemFadeUp}
-            id="customer-dash-heading"
-            className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
-          >
-            <span className="block text-[#fcfbf7]">
-              Customer Experience Hub
-            </span>
-          </motion.h1>
-
-          <motion.p
-            variants={itemFadeUp}
-            id="customer-dash-subtext"
-            className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
-          >
-            Track morning field harvests, manage recurring farm subscriptions, and verify farmer fair trade shares.
-          </motion.p>
-
-          {/* If not logged in as customer, show helpful banner */}
-          {(!isLoggedIn || userRole !== 'customer') && (
-            <motion.div variants={itemFadeUp} className="mt-6">
-              <div className="inline-flex flex-wrap items-center justify-center gap-3 p-3 px-5 rounded-2xl bg-[#14120c] border border-[#d4af37]/40 text-xs text-[#fae69e]">
-                <span>Preview Mode: Sign in to manage your active orders & personal subscriptions.</span>
-                <Link
-                  to="/login?role=customer"
-                  className="px-3 py-1 rounded-full bg-[#fae69e] text-[#0a0a0a] font-mono font-semibold uppercase tracking-wider hover:brightness-110 flex items-center gap-1"
-                >
-                  <LogIn className="w-3 h-3" />
-                  Customer Sign In
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* ========================================================================= */}
-        {/* MAIN DASHBOARD CONTENT                                                    */}
-        {/* ========================================================================= */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-60px' }}
-          variants={containerVariants}
-          className="mt-14 sm:mt-18"
-        >
-          <div
-            id="customer-dashboard-main-card"
-            className="p-7 sm:p-10 rounded-3xl bg-[#0e0d0b]/90 border-2 border-[#d4af37]/35 hover:border-[#d4af37] backdrop-blur-2xl shadow-[0_0_50px_-15px_rgba(212,175,55,0.25)] transition-all duration-300"
-          >
-            {/* Header / Profile Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#d4af37]/20">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2a2412] to-[#12100a] border border-[#d4af37]/45 flex items-center justify-center text-[#fae69e] shadow-[0_0_15px_-3px_rgba(212,175,55,0.25)]">
-                  <User className="w-7 h-7" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#fcfbf7]">
-                      {displayName}
-                    </h3>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#18150d] border border-[#d4af37]/30 text-[#fae69e]">
-                      <ShieldCheck className="w-3 h-3 text-[#34d399]" /> Verified Patron
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#8e8b82] font-mono mt-0.5 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
-                    <span>Delivery Address: {displayAddress}</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Button */}
+            {/* Explore Marketplace CTA */}
+            <div className="w-full md:w-auto">
               <Link
                 to="/marketplace"
-                id="customer-browse-market-btn"
-                className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-xs font-semibold uppercase tracking-[0.14em] text-[#0a0a0a] bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] hover:brightness-110 shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)] cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4 text-[#0a0a0a]" />
-                <span>Shop Fresh Harvest</span>
+                <span>{t('dash.continueShopping', 'Continue Shopping')}</span>
               </Link>
             </div>
+          </div>
 
-            {/* Hub Quick Nav Tiles */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-              {customerItems.map((item, idx) => {
-                const IconComp = item.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="p-5 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-[#1a1710] transition-all group flex items-start justify-between cursor-pointer"
-                  >
-                    <div className="flex items-start gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-[#1d190e] border border-[#d4af37]/30 flex items-center justify-center text-[#fae69e] group-hover:scale-105 transition-transform shrink-0">
-                        <IconComp className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-serif text-base font-semibold text-[#f5f3eb] group-hover:text-[#fae69e] transition-colors">
-                          {item.label}
-                        </h4>
-                        <p className="text-xs text-[#8e8b82] font-sans mt-0.5 leading-relaxed">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#1c180e] border border-[#d4af37]/30 text-[#fae69e] shrink-0 font-medium">
-                      {item.value}
-                    </span>
-                  </div>
-                );
-              })}
+          {/* 2. SUMMARY KPI CARDS (REAL DATA ONLY) */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-8 pt-6 border-t border-[#d4af37]/20">
+            {/* Total Orders */}
+            <div className="p-4 rounded-2xl bg-[#12100c] border border-[#d4af37]/30 shadow-sm">
+              <div className="flex items-center justify-between text-[#8e8b82] mb-1">
+                <span className="text-[11px] font-mono uppercase">{t('dash.totalOrders', 'Total Orders')}</span>
+                <ShoppingBag className="w-4 h-4 text-[#d4af37]" />
+              </div>
+              <div className="font-serif text-2xl font-bold text-[#f5f3eb]">{totalOrdersCount}</div>
             </div>
 
-            {/* Live Harvest Delivery Tracker & My Orders Manifest */}
-            <div className="pt-6 border-t border-[#d4af37]/20">
-              <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-                <div>
-                  <span className="text-xs font-mono uppercase tracking-widest text-[#fae69e] font-semibold block">
-                    My Harvest Orders ({orders.length})
-                  </span>
-                  <span className="text-[11px] text-[#8e8b82]">
-                    Sub-24hr cold-chain fulfillment & transparent farm escrow
-                  </span>
+            {/* Active Orders */}
+            <div className="p-4 rounded-2xl bg-[#14120c] border border-[#fae69e]/40 shadow-sm">
+              <div className="flex items-center justify-between text-[#8e8b82] mb-1">
+                <span className="text-[11px] font-mono uppercase text-[#fae69e]">{t('dash.activeDispatches', 'Active Orders')}</span>
+                <Clock className="w-4 h-4 text-[#fae69e]" />
+              </div>
+              <div className="font-serif text-2xl font-bold text-[#fae69e]">{activeOrders.length}</div>
+            </div>
+
+            {/* Delivered Orders */}
+            <div className="p-4 rounded-2xl bg-[#12100c] border border-[#34d399]/40 shadow-sm">
+              <div className="flex items-center justify-between text-[#8e8b82] mb-1">
+                <span className="text-[11px] font-mono uppercase text-[#34d399]">{t('dash.delivered', 'Delivered')}</span>
+                <BookmarkCheck className="w-4 h-4 text-[#34d399]" />
+              </div>
+              <div className="font-serif text-2xl font-bold text-[#34d399]">{deliveredOrders.length}</div>
+            </div>
+
+            {/* Cancelled Orders */}
+            <div className="p-4 rounded-2xl bg-[#12100c] border border-[#d4af37]/30 shadow-sm">
+              <div className="flex items-center justify-between text-[#8e8b82] mb-1">
+                <span className="text-[11px] font-mono uppercase text-[#8e8b82]">{t('order.cancelled', 'Cancelled')}</span>
+                <AlertCircle className="w-4 h-4 text-[#8e8b82]" />
+              </div>
+              <div className="font-serif text-2xl font-bold text-[#aba79c]">{cancelledOrders.length}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. ORDER FILTER TABS */}
+        <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-[#d4af37]/20">
+          <div>
+            <h2 className="font-serif text-2xl font-bold text-[#fcfbf7]">{t('dash.myOrdersTitle', 'My Orders')}</h2>
+            <p className="text-xs text-[#8e8b82]">{t('dash.myOrdersSub', 'Track real-time direct farm harvests and order delivery milestones.')}</p>
+          </div>
+
+          <div className="p-1 rounded-2xl bg-[#14120e] border border-[#d4af37]/30 inline-flex font-mono text-xs overflow-x-auto no-scrollbar">
+            {[
+              { id: 'all', label: t('market.allCategories', 'All Orders') },
+              { id: 'active', label: t('dash.activeDispatches', 'Active') },
+              { id: 'delivered', label: t('dash.delivered', 'Delivered') },
+              { id: 'cancelled', label: t('order.cancelled', 'Cancelled') },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setSelectedTab(tab.id as any)}
+                className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                  selectedTab === tab.id
+                    ? 'bg-gradient-to-r from-[#241c0e] to-[#16130c] text-[#fae69e] border border-[#d4af37]/60 font-bold shadow-sm'
+                    : 'text-[#8e8b82] hover:text-[#f5f3eb]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. ORDERS LISTING (CARDS WITH STATUS TIMELINE) */}
+        {isLoading ? (
+          <div className="p-16 text-center space-y-3">
+            <div className="w-8 h-8 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-mono text-[#fae69e]">{t('common.loading', 'Loading your orders...')}</p>
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          /* 5. EMPTY STATE */
+          <div className="p-12 sm:p-16 rounded-3xl bg-[#12100c] border border-[#d4af37]/30 text-center space-y-4 max-w-md mx-auto shadow-lg">
+            <div className="w-16 h-16 rounded-full bg-[#1c180e] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] mx-auto">
+              <ShoppingBag className="w-7 h-7 text-[#d4af37]" />
+            </div>
+            <h3 className="font-serif text-xl font-bold text-[#fcfbf7]">
+              {t('dash.noOrdersYet', 'No orders yet')}
+            </h3>
+            <p className="text-xs text-[#aba79c] leading-relaxed">
+              {t('dash.emptyOrdersDesc', 'Fresh produce from Indian farmers is waiting for you.')}
+            </p>
+            <Link
+              to="/marketplace"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-md"
+            >
+              <span>{t('dash.exploreMarketplace', 'Explore Marketplace')}</span>
+              <ArrowRight className="w-4 h-4 text-[#0a0a0a]" />
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredOrders.map((order) => {
+              const currentStep = getStepNumber(order.status);
+              const isDelivered = order.status === 'Delivered';
+              const isCancelled = order.status === 'Cancelled';
+
+              return (
+                <div
+                  key={order.id}
+                  className="rounded-3xl bg-[#0f0e0c] border border-[#d4af37]/30 overflow-hidden shadow-[0_0_25px_-8px_rgba(212,175,55,0.15)] hover:border-[#d4af37]/60 transition-all"
+                >
+                  {/* Order Card Header */}
+                  <div className="p-5 sm:p-6 bg-gradient-to-r from-[#18140e] to-[#100e0a] border-b border-[#d4af37]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-sm font-bold text-[#fae69e]">
+                          Order #{order.id.slice(-6).toUpperCase()}
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono uppercase font-bold ${
+                            isDelivered
+                              ? 'bg-[#102414] text-[#34d399] border border-[#34d399]/40'
+                              : isCancelled
+                              ? 'bg-[#2a1010] text-[#f87171] border border-[#f87171]/40'
+                              : 'bg-[#221c10] text-[#fae69e] border border-[#d4af37]/50'
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-mono text-[#8e8b82] flex items-center gap-2">
+                        <Calendar className="w-3 h-3 text-[#d4af37]" />
+                        <span>Placed: {order.createdAt}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-[#8e8b82] font-mono">{t('checkout.total', 'Total')}:</span>
+                      <span className="font-serif text-xl sm:text-2xl font-bold text-[#fae69e]">
+                        ₹{order.total}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Visual Status Timeline */}
+                  <div className="px-5 sm:px-8 py-6 border-b border-[#d4af37]/15 bg-[#0b0a08]/80">
+                    {isCancelled ? (
+                      <div className="flex items-center gap-3 text-xs font-mono text-[#f87171]">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Order was cancelled.</span>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        {/* Connecting track line */}
+                        <div className="absolute top-1/2 left-4 right-4 -translate-y-1/2 h-0.5 bg-[#201c14] z-0" />
+                        <div
+                          className="absolute top-1/2 left-4 -translate-y-1/2 h-0.5 bg-gradient-to-r from-[#d4af37] to-[#fae69e] transition-all duration-500 z-0"
+                          style={{ width: `${Math.min(100, Math.max(0, ((currentStep - 1) / 3) * 100))}%` }}
+                        />
+
+                        {/* Step checkpoints */}
+                        <div className="relative z-10 flex items-center justify-between">
+                          {stepsList.map((step, idx) => {
+                            const stepIdx = idx + 1;
+                            const isReached = stepIdx <= currentStep;
+                            const isCurrent = stepIdx === currentStep;
+
+                            return (
+                              <div key={step.key} className="flex flex-col items-center">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                    isReached
+                                      ? 'bg-gradient-to-br from-[#fae69e] to-[#d4af37] text-[#0a0a0a] shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+                                      : 'bg-[#18150e] border border-[#d4af37]/30 text-[#6e6b63]'
+                                  } ${isCurrent ? 'ring-2 ring-[#fae69e] ring-offset-2 ring-offset-black scale-110' : ''}`}
+                                >
+                                  <step.icon className="w-4 h-4" />
+                                </div>
+                                <span
+                                  className={`mt-2 text-[10px] sm:text-xs font-mono font-medium text-center ${
+                                    isReached ? 'text-[#fae69e] font-bold' : 'text-[#6e6b63]'
+                                  }`}
+                                >
+                                  {step.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Order Items & Farmer Connection */}
+                  <div className="p-5 sm:p-6 space-y-4">
+                    <div className="space-y-3">
+                      {order.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={getProduceImage(item)}
+                              alt={item.name}
+                              className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
+                              loading="lazy"
+                            />
+                            <div>
+                              <h4 className="font-serif font-bold text-sm text-[#f5f3eb]">{item.name}</h4>
+                              <div className="text-[11px] font-mono text-[#8e8b82]">
+                                {item.quantity} {item.unit} × ₹{item.price}
+                              </div>
+
+                              {/* Clickable Farmer Connection with Farmer ID */}
+                              <div
+                                onClick={(e) => handleOpenFarmerProfile(item.farmerName, item.farmerId, e)}
+                                className="inline-flex items-center gap-1 text-[11px] font-mono text-[#d4af37] hover:text-[#fae69e] hover:underline cursor-pointer mt-0.5"
+                                title="Click to view verified farmer profile"
+                              >
+                                <span>👨🌾 {item.farmerName}</span>
+                                {item.farmerId && (
+                                  <span className="text-[9px] bg-[#221c10] px-1.5 py-0.2 rounded border border-[#d4af37]/40 text-[#fae69e]">
+                                    {item.farmerId}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right font-mono font-bold text-sm text-[#fae69e] self-end sm:self-center">
+                            ₹{item.price * item.quantity}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Delivery & Order Details Footer */}
+                    <div className="pt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+                      <div className="text-[#8e8b82] flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                        <span>{order.deliveryAddress || 'Doorstep Delivery'}</span>
+                      </div>
+
+                      {/* Action Buttons: [ View Details ] [ Rate & Review ] [ Buy Again ] */}
+                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOrderDetails(order)}
+                          className="px-3.5 py-2 rounded-xl bg-[#1a160e] hover:bg-[#262012] border border-[#d4af37]/40 text-xs font-mono font-semibold text-[#fae69e] transition-all cursor-pointer"
+                        >
+                          {t('order.viewDetails', 'Order Details')}
+                        </button>
+
+                        {/* Review Action ONLY if Delivered */}
+                        {isDelivered && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const firstItem = order.items[0];
+                              setReviewModalData({
+                                farmerId: firstItem.farmerId || 'ravi-kumar',
+                                farmerName: firstItem.farmerName,
+                                produceName: firstItem.name,
+                              });
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-[#241c0e] hover:bg-[#322612] border border-[#d4af37] text-xs font-mono font-bold text-[#fae69e] transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                          >
+                            <Star className="w-3.5 h-3.5 text-[#d4af37] fill-[#d4af37]" />
+                            <span>{t('product.rateReview', 'Rate & Review')}</span>
+                          </button>
+                        )}
+
+                        {/* Buy Again Button */}
+                        {isDelivered && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              order.items.forEach((it) => {
+                                addToCart(
+                                  {
+                                    productId: it.productId,
+                                    name: it.name,
+                                    image: getProduceImage(it),
+                                    price: it.price,
+                                    unit: it.unit,
+                                    farmerName: it.farmerName,
+                                    farmerId: it.farmerId,
+                                    maxAvailable: 100,
+                                  },
+                                  it.quantity
+                                );
+                              });
+                              openCart();
+                            }}
+                            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#fae69e] to-[#d4af37] text-[#0a0a0a] text-xs font-serif font-bold uppercase tracking-wider hover:brightness-110 flex items-center gap-1 shadow-sm cursor-pointer active:scale-95"
+                          >
+                            <RefreshCw className="w-3 h-3 text-[#0a0a0a]" />
+                            <span>{t('order.buyAgain', 'Buy Again')}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#14120e] border border-[#d4af37]/25 text-xs font-mono">
-                  {(['All', 'Active', 'Delivered'] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setSelectedTab(tab)}
-                      className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                        selectedTab === tab
-                          ? 'bg-[#221c10] text-[#fae69e] border border-[#d4af37]/50 font-bold'
-                          : 'text-[#8e8b82] hover:text-[#f5f3eb]'
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))}
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 6. ORDER DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedOrderDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg rounded-3xl bg-[#12100c] border-2 border-[#d4af37]/60 p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-[#d4af37]/20">
+                <div>
+                  <span className="text-[10px] font-mono text-[#d4af37] uppercase tracking-wider block">
+                    Order Manifest
+                  </span>
+                  <h3 className="font-serif text-lg font-bold text-[#fcfbf7]">
+                    Order #{selectedOrderDetails.id.slice(-6).toUpperCase()}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="p-1 rounded-full text-[#aba79c] hover:text-[#fcfbf7]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Order Metadata */}
+              <div className="grid grid-cols-2 gap-3 text-xs font-mono p-3.5 rounded-2xl bg-[#18150e] border border-[#d4af37]/20">
+                <div>
+                  <span className="text-[#8e8b82] block text-[10px]">Order Status:</span>
+                  <span className="text-[#34d399] font-bold">{selectedOrderDetails.status}</span>
+                </div>
+                <div>
+                  <span className="text-[#8e8b82] block text-[10px]">Payment Method:</span>
+                  <span className="text-[#fae69e] font-bold">{selectedOrderDetails.paymentMethod}</span>
+                </div>
+                <div>
+                  <span className="text-[#8e8b82] block text-[10px]">Order Date:</span>
+                  <span className="text-[#f5f3eb]">{selectedOrderDetails.createdAt}</span>
+                </div>
+                <div>
+                  <span className="text-[#8e8b82] block text-[10px]">Preferred Delivery:</span>
+                  <span className="text-[#f5f3eb]">{selectedOrderDetails.preferredDeliveryDate || 'Within 24 Hours'}</span>
                 </div>
               </div>
 
-              {orders.length === 0 ? (
-                <div className="p-8 rounded-2xl bg-[#12110c] border border-[#d4af37]/20 text-center space-y-3">
-                  <ShoppingBag className="w-8 h-8 text-[#d4af37]/50 mx-auto" />
-                  <p className="text-sm font-serif text-[#fcfbf7]">No orders placed yet</p>
-                  <p className="text-xs text-[#8e8b82]">
-                    Browse regional farmer harvests to allocate direct morning produce.
-                  </p>
-                  <Link
-                    to="/marketplace"
-                    className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#fae69e] text-[#0a0a0a] text-xs font-serif font-bold uppercase tracking-wider hover:brightness-110"
-                  >
-                    <span>Browse Marketplace</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders
-                    .filter((ord) => {
-                      if (selectedTab === 'Active') return ord.status !== 'Delivered';
-                      if (selectedTab === 'Delivered') return ord.status === 'Delivered';
-                      return true;
-                    })
-                    .map((ord) => (
-                      <div
-                        key={ord.id}
-                        className="p-5 rounded-2xl bg-[#12110c] border border-[#d4af37]/25 hover:border-[#d4af37]/50 transition-all space-y-4 shadow-sm"
-                      >
-                        {/* Order Top Bar */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#d4af37]/15">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-xs font-mono font-bold text-[#fae69e] bg-[#1d190e] px-2.5 py-1 rounded-lg border border-[#d4af37]/35">
-                              {ord.id}
-                            </span>
-                            <span className="text-xs font-mono text-[#8e8b82]">
-                              Placed {ord.createdAt}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2.5">
-                            <span
-                              className={`px-3 py-1 rounded-full text-[11px] font-mono font-semibold border flex items-center gap-1.5 ${
-                                ord.status === 'Placed'
-                                  ? 'bg-[#201c10] text-[#fae69e] border-[#d4af37]/50'
-                                  : ord.status === 'Delivered'
-                                  ? 'bg-[#102416] text-[#34d399] border-[#34d399]/40'
-                                  : 'bg-[#1a1f2c] text-[#60a5fa] border-[#60a5fa]/40'
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  ord.status === 'Delivered'
-                                    ? 'bg-[#34d399]'
-                                    : 'bg-[#fae69e] animate-pulse'
-                                }`}
-                              />
-                              {ord.status}
-                            </span>
-
-                            <span className="font-mono text-sm font-bold text-[#fcfbf7]">
-                              ₹{ord.total}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Order Produce Manifest */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          {ord.items.map((item, itemIdx) => (
-                            <div
-                              key={itemIdx}
-                              className="p-3 rounded-xl bg-[#18150e] border border-[#d4af37]/15 flex items-center justify-between gap-3"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-[#d4af37]/20 shrink-0 bg-[#0a0a0a]">
-                                  <img
-                                    src={item.image}
-                                    alt={item.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="min-w-0">
-                                  <h5 className="font-serif text-xs font-semibold text-[#fcfbf7] truncate">
-                                    {item.name}
-                                  </h5>
-                                  <p className="text-[10px] text-[#aba79c] truncate flex items-center gap-1">
-                                    <Tractor className="w-2.5 h-2.5 text-[#d4af37]" />
-                                    <span>{item.farmerName}</span>
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-[11px] font-mono text-[#fae69e] shrink-0 font-medium">
-                                {item.quantity} {item.unit}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Order Footer / Meta & Review Action */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs font-mono text-[#8e8b82]">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <span className="flex items-center gap-1 text-[#f5f3eb]">
-                              <Truck className="w-3.5 h-3.5 text-[#d4af37]" />
-                              <span>{ord.deliveryMethod}</span>
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-[#d4af37]" />
-                              <span>ETA: {ord.preferredDeliveryDate}</span>
-                            </span>
-                            <span className="text-[10px] text-[#aba79c]">
-                              Payment: {ord.paymentMethod}
-                            </span>
-                          </div>
-
-                          {isLoggedIn && userRole === 'customer' && ord.items.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setReviewModalData({
-                                  farmerId: ord.items[0].farmerName.toLowerCase().includes('ravi')
-                                    ? 'ravi-kumar'
-                                    : ord.items[0].farmerName.toLowerCase().includes('lakshmi')
-                                    ? 'lakshmi-devi'
-                                    : 'suresh-naidu',
-                                  farmerName: ord.items[0].farmerName,
-                                  produceName: ord.items[0].name,
-                                })
-                              }
-                              className="px-3 py-1.5 rounded-xl bg-[#1c180e] hover:bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#fae69e] text-xs font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
-                            >
-                              <Star className="w-3.5 h-3.5 text-[#d4af37] fill-[#d4af37]" />
-                              <span>Review Farmer</span>
-                            </button>
-                          )}
-                        </div>
+              {/* Itemized Produce Breakdown */}
+              <div className="space-y-2">
+                <span className="text-xs font-mono uppercase text-[#d4af37] font-semibold block">
+                  Harvest Items
+                </span>
+                {selectedOrderDetails.items.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs font-mono p-2.5 rounded-xl bg-[#18150e]">
+                    <div>
+                      <div className="text-[#fcfbf7] font-bold">{item.name}</div>
+                      <div className="text-[10px] text-[#8e8b82]">
+                        {item.quantity} {item.unit} × ₹{item.price} • {item.farmerName}
                       </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </div>
+                    </div>
+                    <div className="text-[#fae69e] font-bold">₹{item.price * item.quantity}</div>
+                  </div>
+                ))}
+              </div>
 
-      {/* Review Modal */}
-      <AnimatePresence>
-        {reviewModalData && (
-          <WriteReviewModal
-            isOpen={!!reviewModalData}
-            onClose={() => setReviewModalData(null)}
-            farmerId={reviewModalData.farmerId}
-            farmerName={reviewModalData.farmerName}
-            produceName={reviewModalData.produceName}
-          />
+              {/* Price Calculation */}
+              <div className="p-3.5 rounded-2xl bg-[#18150e] border border-[#d4af37]/20 space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between text-[#aba79c]">
+                  <span>Items Subtotal:</span>
+                  <span>₹{selectedOrderDetails.subtotal}</span>
+                </div>
+                <div className="flex justify-between text-[#aba79c]">
+                  <span>Direct Farm Logistics Fee:</span>
+                  <span>{selectedOrderDetails.deliveryFee > 0 ? `₹${selectedOrderDetails.deliveryFee}` : 'FREE'}</span>
+                </div>
+                <div className="pt-2 border-t border-[#d4af37]/20 flex justify-between text-sm font-bold text-[#fae69e]">
+                  <span>Total Amount Settled:</span>
+                  <span>₹{selectedOrderDetails.total}</span>
+                </div>
+              </div>
+
+              {/* Delivery Address */}
+              <div className="text-xs text-[#8e8b82] space-y-1 font-sans">
+                <span className="font-mono text-[10px] uppercase text-[#d4af37] block font-semibold">Delivery Destination:</span>
+                <p className="text-[#f5f3eb]">{selectedOrderDetails.deliveryAddress}</p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderDetails(null)}
+                  className="w-full py-3 rounded-xl bg-[#1e1910] border border-[#d4af37]/40 text-xs font-mono text-[#fae69e] hover:bg-[#282014]"
+                >
+                  Close Manifest
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
+
+      {/* 7. WRITE REVIEW MODAL */}
+      {reviewModalData && (
+        <WriteReviewModal
+          isOpen={true}
+          onClose={() => setReviewModalData(null)}
+          farmerId={reviewModalData.farmerId}
+          farmerName={reviewModalData.farmerName}
+          produceName={reviewModalData.produceName}
+        />
+      )}
+
+      {/* 8. FARMER PROFILE MODAL */}
+      {selectedFarmer && (
+        <FarmerProfileModal
+          farmer={selectedFarmer}
+          onClose={() => setSelectedFarmer(null)}
+          onSelectProduce={() => {
+            setSelectedFarmer(null);
+            navigate('/marketplace');
+          }}
+        />
+      )}
     </section>
   );
 };
