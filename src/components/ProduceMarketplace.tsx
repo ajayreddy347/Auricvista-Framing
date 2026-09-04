@@ -31,13 +31,14 @@ import { useReviews } from '../context/ReviewsContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 import { GoogleFarmMap } from './GoogleFarmMap';
 
 export const ProduceMarketplace: React.FC = () => {
   const { listings, isLoading, error } = useProduce();
   const { getProductStats } = useReviews();
   const { addToCart } = useCart();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('ALL');
@@ -67,18 +68,39 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionVegetables',
       sectionDefault: 'Fresh Vegetables',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
-          cat.includes('veg') ||
-          (cat === 'farm fresh' && !name.includes('saffron') && !name.includes('jaggery')) ||
-          name.includes('tomato') ||
-          name.includes('carrot') ||
-          name.includes('potato') ||
-          name.includes('brinjal') ||
-          name.includes('gourd') ||
-          name.includes('radish')
-        );
+          (cat === 'vegetables' || cat.includes('veg')) &&
+          !cat.includes('herb') &&
+          !cat.includes('green')
+        ) ||
+        name.includes('onion') ||
+        name.includes('potato') ||
+        name.includes('tomato') ||
+        name.includes('cauliflower') ||
+        name.includes('cabbage') ||
+        name.includes('capsicum') ||
+        name.includes('green chilli') ||
+        name.includes('carrot') ||
+        name.includes('beetroot') ||
+        name.includes('brinjal') ||
+        name.includes('eggplant') ||
+        name.includes('okra') ||
+        name.includes('bhindi') ||
+        name.includes('cucumber') ||
+        name.includes('kheera') ||
+        name.includes('bottle gourd') ||
+        name.includes('bitter gourd') ||
+        name.includes('ridge gourd') ||
+        name.includes('pumpkin') ||
+        name.includes('radish') ||
+        name.includes('french beans') ||
+        name.includes('green peas') ||
+        name.includes('sweet corn') ||
+        name.includes('drumstick') ||
+        name.includes('ginger') ||
+        name.includes('garlic');
       },
     },
     {
@@ -90,17 +112,29 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionFruits',
       sectionDefault: 'Fresh Fruits',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
+          cat === 'fruits' ||
           cat.includes('fruit') ||
           name.includes('mango') ||
-          name.includes('apple') ||
-          name.includes('dragonfruit') ||
           name.includes('banana') ||
-          name.includes('papaya') ||
           name.includes('orange') ||
-          name.includes('guava')
+          name.includes('pineapple') ||
+          name.includes('apple') ||
+          name.includes('papaya') ||
+          name.includes('pomegranate') ||
+          name.includes('watermelon') ||
+          name.includes('muskmelon') ||
+          name.includes('guava') ||
+          name.includes('grapes') ||
+          name.includes('dragon fruit') ||
+          name.includes('custard apple') ||
+          name.includes('sapota') ||
+          name.includes('jackfruit') ||
+          name.includes('coconut') ||
+          name.includes('lemon') ||
+          name.includes('strawberry')
         );
       },
     },
@@ -113,18 +147,28 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionSpices',
       sectionDefault: 'Spices & Seasonings',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
           cat.includes('spice') ||
+          cat.includes('seasoning') ||
           name.includes('turmeric') ||
-          name.includes('saffron') ||
-          name.includes('pepper') ||
+          name.includes('black pepper') ||
           name.includes('cardamom') ||
           name.includes('clove') ||
           name.includes('cinnamon') ||
-          name.includes('ginger') ||
-          name.includes('chilli')
+          name.includes('coriander seeds') ||
+          name.includes('dhaniya seeds') ||
+          name.includes('cumin') ||
+          name.includes('jeera') ||
+          name.includes('red chilli') ||
+          name.includes('mustard') ||
+          name.includes('fennel') ||
+          name.includes('saunf') ||
+          name.includes('fenugreek seeds') ||
+          name.includes('methi dana') ||
+          name.includes('saffron') ||
+          name.includes('kesar')
         );
       },
     },
@@ -137,17 +181,19 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionGrains',
       sectionDefault: 'Grains & Cereals',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
           cat.includes('grain') ||
           cat.includes('cereal') ||
           name.includes('rice') ||
+          name.includes('basmati') ||
           name.includes('wheat') ||
-          name.includes('millet') ||
           name.includes('ragi') ||
           name.includes('jowar') ||
-          name.includes('oats')
+          name.includes('bajra') ||
+          name.includes('maize') ||
+          name.includes('millet')
         );
       },
     },
@@ -160,17 +206,18 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionPulses',
       sectionDefault: 'Pulses & Dals',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
           cat.includes('pulse') ||
-          name.includes('dal') ||
-          name.includes('gram') ||
-          name.includes('lentil') ||
+          cat.includes('dal') ||
           name.includes('toor') ||
           name.includes('moong') ||
           name.includes('urad') ||
-          name.includes('chana')
+          name.includes('chana') ||
+          name.includes('chickpea') ||
+          name.includes('rajma') ||
+          name.includes('lentil')
         );
       },
     },
@@ -183,18 +230,22 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionHerbs',
       sectionDefault: 'Herbs & Leafy Greens',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
+          cat.includes('herb') ||
+          cat.includes('leafy') ||
           name.includes('spinach') ||
           name.includes('palak') ||
-          name.includes('methi') ||
-          name.includes('coriander') ||
+          name.includes('coriander leaves') ||
+          name.includes('dhaniya leaves') ||
           name.includes('mint') ||
           name.includes('pudina') ||
-          name.includes('curry leaf') ||
-          name.includes('kale') ||
-          name.includes('lettuce') ||
-          name.includes('herb')
+          name.includes('curry leaves') ||
+          name.includes('kadi patta') ||
+          name.includes('methi leaves') ||
+          name.includes('amaranth') ||
+          name.includes('lettuce')
         );
       },
     },
@@ -207,16 +258,17 @@ export const ProduceMarketplace: React.FC = () => {
       sectionTitleKey: 'market.sectionOrganic',
       sectionDefault: 'Organic & Natural Products',
       matchFn: (item: ProduceListing) => {
-        const name = item.name.toLowerCase();
-        const cat = item.category.toLowerCase();
+        const cat = (item.category || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
         return (
+          cat.includes('organic') ||
+          cat.includes('natural') ||
           name.includes('jaggery') ||
+          name.includes('gur') ||
           name.includes('honey') ||
-          name.includes('ghee') ||
-          name.includes('coconut') ||
           name.includes('oil') ||
-          cat.includes('dairy') ||
-          cat.includes('organic')
+          name.includes('walnut') ||
+          name.includes('dry fruits')
         );
       },
     },
@@ -403,9 +455,9 @@ export const ProduceMarketplace: React.FC = () => {
   }, [sortedListings, selectedCategoryTab, searchQuery]);
 
   return (
-    <div className="w-full bg-[#070707] text-[#fcfbf7] min-h-screen pb-28">
+    <div className="w-full bg-transparent text-[#fcfbf7] min-h-screen pb-28">
       {/* 1. MARKETPLACE HEADER */}
-      <section className="relative pt-24 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#16120b] via-[#0c0a07] to-[#070707] border-b border-[#d4af37]/25">
+      <section className="relative pt-24 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#16120b]/80 via-[#0c0a07]/75 to-transparent backdrop-blur-[2px] border-b border-[#d4af37]/25">
         <div className="max-w-7xl mx-auto w-full">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
@@ -512,44 +564,73 @@ export const ProduceMarketplace: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. HORIZONTAL CATEGORY NAVIGATION BAR */}
-      <div className="sticky top-16 z-30 bg-[#0c0a07]/95 backdrop-blur-md border-b border-[#d4af37]/20 py-3 px-4 sm:px-6 lg:px-8 shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          {categoryDefinitions.map((cat) => {
-            const isSelected = selectedCategoryTab === cat.key;
-            const count =
-              cat.key === 'ALL'
-                ? listings.length
-                : listings.filter((l) => (cat.matchFn ? cat.matchFn(l) : l.category.toUpperCase() === cat.key)).length;
+      {/* 3. MAIN PRODUCT CATALOG CONTENT */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-10">
+        {/* RESPONSIVE CATEGORY EXPLORATION GRID */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-serif text-lg sm:text-xl font-bold text-[#fcfbf7] flex items-center gap-2.5">
+              <Layers className="w-5 h-5 text-[#d4af37]" />
+              <span>{t('market.browseCategories', 'Explore Farm Categories')}</span>
+            </h2>
+            <span className="text-xs font-mono text-[#aba79c]">
+              {selectedCategoryTab === 'ALL'
+                ? t('market.allCategoriesActive', 'All Categories Active')
+                : `${t('market.categoryActive', 'Category')}: ${selectedCategoryTab}`}
+            </span>
+          </div>
 
-            return (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => setSelectedCategoryTab(cat.key)}
-                className={`px-4 py-2.5 rounded-2xl text-xs font-sans whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-[#2a2212] to-[#18140c] border-[#d4af37] text-[#fae69e] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)] scale-[1.02]'
-                    : 'bg-[#14120e]/80 border-[#d4af37]/20 text-[#8e8b82] hover:text-[#fcfbf7] hover:border-[#d4af37]/45'
-                }`}
-              >
-                <span className="text-sm">{cat.emoji}</span>
-                <span>{t(cat.labelKey, cat.defaultLabel)}</span>
-                <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                    isSelected ? 'bg-[#d4af37]/25 text-[#fae69e]' : 'bg-white/5 text-[#6e6b63]'
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
+            {categoryDefinitions.map((cat) => {
+              const isSelected = selectedCategoryTab === cat.key;
+              const count =
+                cat.key === 'ALL'
+                  ? listings.length
+                  : listings.filter((l) => (cat.matchFn ? cat.matchFn(l) : l.category.toUpperCase() === cat.key)).length;
+
+              return (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setSelectedCategoryTab(cat.key)}
+                  className={`group relative p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between text-left overflow-hidden ${
+                    isSelected
+                      ? 'bg-gradient-to-br from-[#2c2210] via-[#1a140b] to-[#100d07] border-[#d4af37] shadow-[0_0_25px_rgba(212,175,55,0.3)] ring-1 ring-[#fae69e]/60 scale-[1.02]'
+                      : 'bg-gradient-to-br from-[#14120e] to-[#0c0b08] border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-[#1c1812]'
                   }`}
                 >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                  <div className="flex items-center justify-between w-full mb-3">
+                    <span className="text-2xl sm:text-3xl p-2 rounded-2xl bg-black/40 border border-[#d4af37]/25 shadow-inner group-hover:scale-110 transition-transform">
+                      {cat.emoji}
+                    </span>
+                    <span
+                      className={`text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
+                        isSelected
+                          ? 'bg-[#d4af37] text-[#0a0a0a]'
+                          : 'bg-[#1e1a12] text-[#fae69e] border border-[#d4af37]/30'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </div>
 
-      {/* 4. MAIN PRODUCT CATALOG CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 space-y-12">
+                  <div>
+                    <h3
+                      className={`font-serif text-xs sm:text-sm md:text-base font-bold transition-colors line-clamp-1 ${
+                        isSelected ? 'text-[#fae69e]' : 'text-[#fcfbf7] group-hover:text-[#fae69e]'
+                      }`}
+                    >
+                      {t(cat.labelKey, cat.defaultLabel)}
+                    </h3>
+                    <p className="text-[10px] sm:text-[11px] font-mono text-[#8e8b82] mt-0.5">
+                      {count} {t('market.items', 'items')}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
         {/* AI SHOPPING RECOMMENDATIONS: "Picked for You" */}
         {!searchQuery && selectedCategoryTab === 'ALL' && seasonalRecommendations.length > 0 && (
           <section className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#16120b] via-[#100e0a] to-[#0a0a0a] border-2 border-[#d4af37]/35 shadow-lg space-y-4">
@@ -910,6 +991,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   t,
   stats,
 }) => {
+  const { language } = useLanguage();
   const isSoldOut = produce.status === 'Sold Out' || produce.quantity <= 0;
 
   return (
@@ -929,7 +1011,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Category Pill Tag */}
         <div className="absolute top-2 sm:top-3 left-2 sm:left-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/80 backdrop-blur-md border border-[#d4af37]/40 text-[9px] sm:text-[10px] font-mono text-[#fae69e] uppercase font-semibold shadow-md">
-          {produce.category}
+          {getLocalizedCategory(produce.category, language)}
         </div>
 
         {/* Stock Status Pill */}
@@ -952,7 +1034,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div>
           {/* Crop Name */}
           <h3 className="font-serif text-sm sm:text-base md:text-lg font-bold text-[#fcfbf7] group-hover:text-[#fae69e] transition-colors line-clamp-1">
-            {produce.name}
+            {getLocalizedProduceName(produce.name, language)}
           </h3>
 
           {/* Farmer Name, Location & Real Farmer ID */}
@@ -994,10 +1076,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="font-serif text-base sm:text-xl font-bold text-[#fae69e]">
                 ₹{produce.pricePerUnit}
               </span>
-              <span className="text-[10px] sm:text-xs font-mono text-[#8e8b82]">/{produce.unit}</span>
+              <span className="text-[10px] sm:text-xs font-mono text-[#8e8b82]">/{getLocalizedUnit(produce.unit, language)}</span>
             </div>
             <span className="text-[10px] font-mono text-[#8e8b82]">
-              {t('market.available', 'Available')}: <strong className="text-[#f5f3eb]">{produce.quantity} {produce.unit}</strong>
+              {t('market.available', 'Available')}: <strong className="text-[#f5f3eb]">{produce.quantity} {getLocalizedUnit(produce.unit, language)}</strong>
             </span>
           </div>
 

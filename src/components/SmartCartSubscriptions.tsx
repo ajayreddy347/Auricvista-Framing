@@ -9,9 +9,11 @@ import {
   Layers,
   Repeat,
 } from 'lucide-react';
+import { SmartCartBuilderModal } from './SmartCartBuilderModal';
 
 export const SmartCartSubscriptions: React.FC = () => {
   const [selectedFrequency, setSelectedFrequency] = useState<string>('Weekly');
+  const [isSmartCartOpen, setIsSmartCartOpen] = useState<boolean>(false);
 
   const cartFeatures = [
     'Select quantity per item',
@@ -168,7 +170,11 @@ export const SmartCartSubscriptions: React.FC = () => {
             </div>
 
             <div className="pt-6 mt-6 border-t border-[#d4af37]/15">
-              <button className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-medium uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#14120c]/70 hover:bg-[#d4af37]/15 border border-[#d4af37]/40 hover:border-[#d4af37] transition-all duration-300 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsSmartCartOpen(true)}
+                className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-medium uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#14120c]/70 hover:bg-[#d4af37]/15 border border-[#d4af37]/40 hover:border-[#d4af37] transition-all duration-300 cursor-pointer"
+              >
                 <span>Start Fresh Cart</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#d4af37]" />
               </button>
@@ -229,6 +235,7 @@ export const SmartCartSubscriptions: React.FC = () => {
                     return (
                       <button
                         key={freq}
+                        type="button"
                         onClick={() => setSelectedFrequency(freq)}
                         className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                           isSelected
@@ -250,7 +257,11 @@ export const SmartCartSubscriptions: React.FC = () => {
             </div>
 
             <div className="pt-6 mt-6 border-t border-[#d4af37]/20">
-              <button className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] font-bold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] cursor-pointer flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsSmartCartOpen(true)}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#d4af37] via-[#fae69e] to-[#c9a227] text-[#0a0a0a] font-bold text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] cursor-pointer flex items-center justify-center gap-2"
+              >
                 <span>Subscribe to Basket</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -258,6 +269,12 @@ export const SmartCartSubscriptions: React.FC = () => {
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Personalized Smart Cart & Routine Builder Modal */}
+      <SmartCartBuilderModal
+        isOpen={isSmartCartOpen}
+        onClose={() => setIsSmartCartOpen(false)}
+      />
     </section>
   );
 };

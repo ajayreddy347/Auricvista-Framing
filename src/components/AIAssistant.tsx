@@ -74,18 +74,18 @@ export const AIAssistant: React.FC = () => {
 
   const featureTiles = [
     {
-      title: language === 'kn' ? 'ಬೆಳೆ & ಕೊಯ್ಲು ಮಾರ್ಗದರ್ಶನ' : language === 'hi' ? 'फसल व कटाई सलाह' : 'Crop & Harvest Guidance',
-      description: language === 'kn' ? 'ಉತ್ತಮ ಕೊಯ್ಲಿನ ಸಮಯ ಮತ್ತು ನೈಸರ್ಗಿಕ ಕೃಷಿ ವಿಧಾನಗಳು.' : language === 'hi' ? 'उत्कृष्ट कटाई समय और जैविक पद्धतियाँ।' : 'Optimal harvest timings and climate-resilient organic methods.',
+      title: t('ai.tile1Title', 'Crop & Harvest Guidance'),
+      description: t('ai.tile1Desc', 'Optimal harvest timings and climate-resilient organic methods.'),
       icon: Compass,
     },
     {
-      title: language === 'kn' ? 'ಉತ್ಪನ್ನ ವಿವರಣೆ ಸೃಷ್ಟಿ' : language === 'hi' ? 'फसल विवरण जनरेशन' : 'Produce Storytelling',
-      description: language === 'kn' ? 'ನಿಮ್ಮ ಸಾವಯವ ಇಳುವರಿಗೆ ಆಕರ್ಷಕ ವಿವರಣೆ ಸೃಷ್ಟಿಸಿ.' : language === 'hi' ? 'अपनी उपज के लिए प्रभावशाली विवरण तैयार करें।' : 'Auto-generate compelling farm storytelling and harvest manifests.',
+      title: t('ai.tile2Title', 'Produce Storytelling'),
+      description: t('ai.tile2Desc', 'Auto-generate compelling farm storytelling and harvest manifests.'),
       icon: FileText,
     },
     {
-      title: language === 'kn' ? 'ಮಾರುಕಟ್ಟೆ & ದರ ಮಾಹಿತಿ' : language === 'hi' ? 'मंडी भाव व मांग' : 'Market Trends & Fair Prices',
-      description: language === 'kn' ? 'ನೈಜ ಸಮಯದ ಸ್ಥಳೀಯ ಬೇಡಿಕೆ ಮತ್ತು ಸೂಕ್ತ ಬೆಲೆ ಸಲಹೆ.' : language === 'hi' ? 'रीयल-टाइम स्थानीय मांग और प्रत्यक्ष मूल्य निर्धारण।' : 'Real-time local retail price trends and instant regional demand alerts.',
+      title: t('ai.tile3Title', 'Market Trends & Fair Prices'),
+      description: t('ai.tile3Desc', 'Real-time local retail price trends and instant regional demand alerts.'),
       icon: TrendingUp,
     },
   ];
@@ -117,7 +117,7 @@ export const AIAssistant: React.FC = () => {
             >
               <Cpu className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                {language === 'kn' ? 'ಬುದ್ಧಿವಂತ ಕೃಷಿ AI ಇಂಜಿನ್' : language === 'hi' ? 'इंटेलिजेंट कृषि इंजन' : 'Intelligent Agri-Engine'}
+                {t('ai.eyebrow', 'Intelligent Agri-Engine')}
               </span>
             </div>
           </motion.div>
@@ -128,17 +128,7 @@ export const AIAssistant: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              {language === 'kn'
-                ? 'ಆರಿಕ್ ಆರೋಹಿ AI ಸಹಾಯಕ'
-                : language === 'hi'
-                ? 'ऑरिक आरोही किसान AI सहायक'
-                : language === 'te'
-                ? 'ఆరిక్ ఆరోహి రైతు AI సహాయకుడు'
-                : language === 'ta'
-                ? 'ஆரிக் ஆரோஹி உழவர் AI உதவியாளர்'
-                : language === 'ml'
-                ? 'ഓറിക് ആരോഹി കർഷക AI സഹായി'
-                : 'Auric Arohi AI Farm Assistant'}
+              {t('ai.heading', 'Auric Arohi AI Farm Assistant')}
             </span>
           </motion.h2>
 
@@ -147,11 +137,7 @@ export const AIAssistant: React.FC = () => {
             id="ai-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            {language === 'kn'
-              ? 'ರೈತರಿಗಾಗಿ ಧ್ವನಿ ಮತ್ತು ಪಠ್ಯ ಆಧಾರಿತ ಕೃಷಿ ಸಲಹೆಗಳು.'
-              : language === 'hi'
-              ? 'किसानों के लिए आवाज और टेक्स्ट आधारित स्मार्ट कृषि मार्गदर्शन।'
-              : 'Smart guidance for farmers, powered by multilingual agricultural AI.'}
+            {t('ai.subtext', 'Smart guidance for farmers, powered by multilingual agricultural AI.')}
           </motion.p>
         </motion.div>
 
@@ -197,11 +183,7 @@ export const AIAssistant: React.FC = () => {
               >
                 <div className="max-w-md sm:max-w-lg p-4 sm:p-5 rounded-2xl rounded-tr-none bg-[#191712] border border-[#d4af37]/25 text-xs sm:text-sm text-[#f5f3eb] font-sans leading-relaxed shadow-md">
                   <p>
-                    {language === 'kn'
-                      ? 'ನನ್ನ ಬಳಿ 200 ಕೆಜಿ ತಾಜಾ ಸಾವಯವ ಟೊಮೇಟೊ ಇದೆ. ನೇರ ಮಾರಾಟಕ್ಕೆ ಉತ್ತಮ ದರ ಎಷ್ಟು?'
-                      : language === 'hi'
-                      ? 'मेरे पास 200 किलो ताज़ा टमाटर तैयार है। सीधे ग्राहकों के लिए सही दाम क्या रखें?'
-                      : 'I have 200 kg organic tomatoes ready. What is the optimal direct price?'}
+                    {t('ai.demoFarmerQuestion', 'I have 200 kg organic tomatoes ready. What is the optimal direct price?')}
                   </p>
                   <span className="text-[10px] font-mono text-[#78756d] block text-right mt-1.5">
                     Farmer Ravi • 2 mins ago
@@ -224,16 +206,12 @@ export const AIAssistant: React.FC = () => {
                   <div className="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-[#fae69e] mb-2 font-semibold">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>
-                      {language === 'kn' ? 'ಲೈವ್ ಕೃಷಿ ದರ ವಿಶ್ಲೇಷಣೆ' : language === 'hi' ? 'लाइव कृषि विश्लेषण' : 'Live Agronomy Insight'}
+                      {t('ai.demoInsightTitle', 'Live Agronomy Insight')}
                     </span>
                   </div>
 
                   <p className="mb-4 text-[#dcd7c9]">
-                    {language === 'kn'
-                      ? 'ಪ್ರಸ್ತುತ ಬೆಂಗಳೂರು ಮತ್ತು ಮೈಸೂರು ವಲಯದಲ್ಲಿ ರಾಸಾಯನಿಕ ರಹಿತ ಟೊಮೇಟೊಗೆ ಹೆಚ್ಚಿನ ಬೇಡಿಕೆಯಿದೆ (94% ಇಂಡೆಕ್ಸ್). ನೇರ ಗ್ರಾಹಕರಿಗೆ ಪ್ರತಿ ಕೆ.ಜಿಗೆ ₹40 ರಿಂದ ₹45 ನಿಗದಿಪಡಿಸಲು ಶಿಫಾರಸು ಮಾಡುತ್ತೇವೆ.'
-                      : language === 'hi'
-                      ? 'वर्तमान में आपके क्षेत्र में जैविक टमाटर की मांग बहुत अधिक (94%) है। हम सुबह की ताज़ा कटाई के लिए ₹40–₹45 प्रति किलो का भाव सुझाते हैं।'
-                      : 'Demand for chemical-free tomatoes is High (94% index). We recommend allocating 120 kg for direct fulfillment and listing at ₹40–₹45 per kg on Auric Arohi.'}
+                    {t('ai.demoInsightText', 'Demand for chemical-free tomatoes is High (94% index). We recommend allocating 120 kg for direct fulfillment and listing at ₹40–₹45 per kg on Auric Arohi.')}
                   </p>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-[#d4af37]/20">

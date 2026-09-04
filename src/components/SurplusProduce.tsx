@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import React from 'react';
 import { motion } from 'motion/react';
 import {
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 
 export const SurplusProduce: React.FC = () => {
+  const { t } = useLanguage();
   const surplusOptions = [
     {
       label: 'Sell at Discount →',
@@ -65,7 +67,7 @@ export const SurplusProduce: React.FC = () => {
   return (
     <section
       id="surplus-produce-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -91,7 +93,7 @@ export const SurplusProduce: React.FC = () => {
             >
               <Leaf className="w-3.5 h-3.5 text-[#34d399]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Zero Waste Circularity
+                {t('surplus.eyebrow', 'Zero Waste Circularity')}
               </span>
             </div>
           </motion.div>
@@ -102,7 +104,7 @@ export const SurplusProduce: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Don't Let Good Food Go to Waste
+              {t('surplus.heading', "Don't Let Good Food Go to Waste")}
             </span>
           </motion.h2>
 

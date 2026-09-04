@@ -12,11 +12,13 @@ import { StarRating } from './StarRating';
 import { FarmerProfileModal, FarmerProfileData } from './FarmerProfileModal';
 import { useReviews } from '../context/ReviewsContext';
 import { useProduce } from '../context/ProduceContext';
+import { useLanguage } from '../context/LanguageContext';
 
 /* NOTE: In the next development phase, all local/mock states (listings, reviews, auth) 
    should be replaced with real backend/database calls (e.g., Firebase Firestore, Cloud SQL, or custom API). */
 
 export const MeetTheFarmer: React.FC = () => {
+  const { t } = useLanguage();
   const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfileData | null>(null);
   const { getFarmerStats } = useReviews();
   const { listings } = useProduce();
@@ -96,7 +98,7 @@ export const MeetTheFarmer: React.FC = () => {
   return (
     <section
       id="meet-the-farmer-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient background gold lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -123,7 +125,7 @@ export const MeetTheFarmer: React.FC = () => {
             >
               <UserCheck className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Verified Producer Network
+                {t('farmer.eyebrow', 'Verified Producer Network')}
               </span>
             </div>
           </motion.div>
@@ -135,7 +137,7 @@ export const MeetTheFarmer: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Meet the Farmer
+              {t('farmer.heading', 'Meet the Farmer')}
             </span>
           </motion.h2>
 
@@ -145,7 +147,7 @@ export const MeetTheFarmer: React.FC = () => {
             id="meet-farmer-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            Every product has a face, a name, and a story behind it.
+            {t('farmer.subtext', 'Every product has a face, a name, and a story behind it.')}
           </motion.p>
         </motion.div>
 
@@ -228,7 +230,7 @@ export const MeetTheFarmer: React.FC = () => {
                   {/* Experience Line */}
                   <div className="flex items-center gap-1.5 text-xs text-[#8e8b82] font-sans mb-6">
                     <Clock className="w-3.5 h-3.5 text-[#a19e95] shrink-0" />
-                    <span>Farming for <strong className="text-[#e8dfca] font-medium">{farmer.experience}</strong></span>
+                    <span>{t('farmer.farmingFor', 'Farming for')} <strong className="text-[#e8dfca] font-medium">{farmer.experience}</strong></span>
                   </div>
                 </div>
 
@@ -239,7 +241,7 @@ export const MeetTheFarmer: React.FC = () => {
                     onClick={() => setSelectedFarmer(farmer)}
                     className="w-full group/btn inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-xs font-medium uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#14120c]/70 hover:bg-[#d4af37]/15 border border-[#d4af37]/40 hover:border-[#d4af37] transition-all duration-300 shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)] hover:shadow-[0_0_20px_-3px_rgba(212,175,55,0.3)] cursor-pointer"
                   >
-                    <span>View Farm & Reviews</span>
+                    <span>{t('farmer.viewFarmReviews', 'View Farm & Reviews')}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-[#d4af37] group-hover/btn:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -274,7 +276,7 @@ export const MeetTheFarmer: React.FC = () => {
               onClick={() => setSelectedFarmer(farmers[0])}
               className="group relative inline-flex items-center justify-center gap-3 px-9 py-4 rounded-full font-medium text-xs sm:text-sm uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#12110c]/85 hover:bg-[#d4af37]/15 border border-[#d4af37]/45 hover:border-[#d4af37] backdrop-blur-md shadow-[0_0_20px_-8px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.4)] hover:scale-[1.02] active:scale-[0.99] transition-all duration-300 cursor-pointer"
             >
-              <span>EXPLORE ALL FARMERS & DOSSIERS</span>
+              <span>{t('farmer.exploreAllDossiers', 'EXPLORE ALL FARMERS & DOSSIERS')}</span>
               <ArrowRight className="w-4 h-4 text-[#d4af37] group-hover:translate-x-1 transition-transform duration-300" />
             </button>
           </div>

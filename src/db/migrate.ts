@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { query } from './index';
+import { seedDiverseMarketplace } from './seed_diverse';
 
 export async function runMigrations(): Promise<void> {
   console.log('[Database Migration] Starting schema verification and migration...');
@@ -310,6 +311,9 @@ async function seedInitialData(): Promise<void> {
       [r.id, r.farmerId, r.farmerName, r.produceId || null, r.produceName || null, r.customerName, r.rating, r.comment, r.verified, r.helpfulCount]
     );
   }
+
+  // Populate diverse Indian farm produce listings
+  await seedDiverseMarketplace();
 
   console.log('[Database Migration] Initial seeding completed successfully.');
 }

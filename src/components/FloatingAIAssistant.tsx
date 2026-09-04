@@ -32,6 +32,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useProduce, ProduceListing } from '../context/ProduceContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 
 interface Message {
   id: string;
@@ -60,6 +62,38 @@ export const FloatingAIAssistant: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputFieldRef = useRef<HTMLInputElement>(null);
 
+  // 1. Keyboard Escape Key Support & Global Window Trigger Support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleCustomOpen = () => {
+      setIsOpen(true);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('auricarohi:open-ai', handleCustomOpen);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('auricarohi:open-ai', handleCustomOpen);
+    };
+  }, [isOpen]);
+
+  // 2. Prevent underlying page scroll when AI Assistant modal is open on small screens
+  useEffect(() => {
+    if (isOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   // Language speech codes for Web Speech API
   const langSpeechCodes: Record<string, string> = {
     en: 'en-IN',
@@ -68,6 +102,13 @@ export const FloatingAIAssistant: React.FC = () => {
     te: 'te-IN',
     ta: 'ta-IN',
     ml: 'ml-IN',
+    bn: 'bn-IN',
+    mr: 'mr-IN',
+    gu: 'gu-IN',
+    pa: 'pa-IN',
+    or: 'or-IN',
+    as: 'as-IN',
+    ur: 'ur-IN',
   };
 
   // Quick Customer & Farmer prompts
@@ -76,103 +117,67 @@ export const FloatingAIAssistant: React.FC = () => {
       {
         id: 'veg',
         icon: Carrot,
-        label: language === 'kn' ? '🥬 ತಾಜಾ ತರಕಾರಿಗಳು' : language === 'hi' ? '🥬 ताज़ी सब्जियां' : language === 'te' ? '🥬 తాజా కూరగాయలు' : language === 'ta' ? '🥬 புதிய காய்கறிகள்' : language === 'ml' ? '🥬 പുതിയ പച്ചക്കറികൾ' : '🥬 Fresh Vegetables',
+        label: language === 'kn' ? '🥬 ತಾಜಾ ತರಕಾರಿಗಳು' : language === 'hi' ? '🥬 ताज़ी सब्जियां' : '🥬 Fresh Vegetables',
         query:
           language === 'kn'
             ? 'ಪ್ರಸ್ತುತ ಲಭ್ಯವಿರುವ ತಾಜಾ ತರಕಾರಿಗಳು ಮತ್ತು ಅವುಗಳ ದರವನ್ನು ತೋರಿಸಿ.'
             : language === 'hi'
             ? 'वर्तमान में उपलब्ध ताज़ी सब्जियां और उनके मूल्य बताएं।'
-            : language === 'te'
-            ? 'ప్రస్తుతం అందుబాటులో ఉన్న కూరగాయల వివరాలు చెప్పండి.'
-            : language === 'ta'
-            ? 'தற்போது கிடைக்கும் புதிய காய்கறிகள் மற்றும் விலைகளைக் காட்டுங்கள்.'
-            : language === 'ml'
-            ? 'ഇപ്പോൾ ലഭ്യമായ പച്ചക്കറികളുടെ വിവരങ്ങൾ പറയൂ.'
             : 'Show me fresh vegetables currently available and their prices.',
       },
       {
         id: 'fruits',
         icon: Apple,
-        label: language === 'kn' ? '🍎 ಹಣ್ಣುಗಳು' : language === 'hi' ? '🍎 ताज़े फल' : language === 'te' ? '🍎 తాజా పండ్లు' : language === 'ta' ? '🍎 பழங்கள்' : language === 'ml' ? '🍎 പഴങ്ങൾ' : '🍎 Available Fruits',
+        label: language === 'kn' ? '🍎 ಹಣ್ಣುಗಳು' : language === 'hi' ? '🍎 ताज़े फल' : '🍎 Available Fruits',
         query:
           language === 'kn'
             ? 'ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಯಾವ ಸಾವಯವ ಹಣ್ಣುಗಳು ಲಭ್ಯವಿವೆ?'
             : language === 'hi'
             ? 'मंडी में कौन-कौन से जैविक फल उपलब्ध हैं?'
-            : language === 'te'
-            ? 'మార్కెట్‌లో ఏయే పండ్లు అందుబాటులో ఉన్నాయి?'
-            : language === 'ta'
-            ? 'சந்தையில் என்னென்ன பழங்கள் உள்ளன?'
-            : language === 'ml'
-            ? 'വിപണിയിൽ ഏതൊക്കെ പഴങ്ങളാണ് ഉള്ളത്?'
             : 'What fresh fruits are available in the marketplace?',
       },
       {
         id: 'budget',
         icon: TrendingUp,
-        label: language === 'kn' ? '💰 ₹150 ಒಳಗಿನ ಬೆಳೆಗಳು' : language === 'hi' ? '💰 ₹150 से कम में' : language === 'te' ? '💰 ₹150 లోపు పంటలు' : language === 'ta' ? '💰 ₹150க்குள்' : language === 'ml' ? '💰 ₹150 ൽ താഴെ' : '💰 Under ₹150',
+        label: language === 'kn' ? '💰 ₹150 ಒಳಗಿನ ಬೆಳೆಗಳು' : language === 'hi' ? '💰 ₹150 से कम में' : '💰 Under ₹150',
         query:
           language === 'kn'
             ? '₹150 ಅಥವಾ ಅದಕ್ಕಿಂತ ಕಡಿಮೆ ದರದಲ್ಲಿರುವ ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ.'
             : language === 'hi'
             ? '₹150 या उससे कम कीमत वाले उत्पाद दिखाएं।'
-            : language === 'te'
-            ? '₹150 లోపు ధర గల పంటలను చూపించండి.'
-            : language === 'ta'
-            ? '₹150க்குள் கிடைக்கும் விளைபொருட்களைக் காட்டுங்கள்.'
-            : language === 'ml'
-            ? '₹150 ൽ താഴെ വിലയുള്ള ഉൽപ്പന്നങ്ങൾ കാണിക്കൂ.'
             : 'Find produce under ₹150 per kg/unit.',
       },
       {
         id: 'spices',
         icon: Flame,
-        label: language === 'kn' ? '🌶️ ಸಾವಯವ ಸಾಂಬಾರ' : language === 'hi' ? '🌶️ जैविक मसाले' : language === 'te' ? '🌶️ సుగంధ ద్రవ్యాలు' : language === 'ta' ? '🌶️ வாசனை பொருட்கள்' : language === 'ml' ? '🌶️ സുഗന്ധവ്യഞ്ജനങ്ങൾ' : '🌶️ Spices & Seasonings',
+        label: language === 'kn' ? '🌶️ ಸಾವಯವ ಸಾಂಬಾರ' : language === 'hi' ? '🌶️ जैविक मसाले' : '🌶️ Spices & Seasonings',
         query:
           language === 'kn'
             ? 'ಯಾವ ರೈತರು ಅರಿಶಿನ ಮತ್ತು ಕೇಸರಿ ಮುಂತಾದ ಸಾಂಬಾರ ಪದಾರ್ಥಗಳನ್ನು ಮಾರಾಟ ಮಾಡುತ್ತಿದ್ದಾರೆ?'
             : language === 'hi'
             ? 'कौन से किसान हल्दी व केसर जैसे मसाले बेच रहे हैं?'
-            : language === 'te'
-            ? 'ఏ రైతులు పసుపు, కుంకుమపువ్వు వంటి సుగంధ ద్రవ్యాలు అమ్ముతున్నారు?'
-            : language === 'ta'
-            ? 'மஞ்சள் மற்றும் குங்குமப்பூ போன்ற வாசனைப் பொருட்களை விற்பனை செய்யும் விவசாயிகள் யார்?'
-            : language === 'ml'
-            ? 'ഏതൊക്കെ കർഷകരാണ് മഞ്ഞളും കുങ്കുമപ്പൂവും വിൽക്കുന്നത്?'
             : 'Which verified farmers are selling spices and seasonings like Turmeric and Saffron?',
       },
       {
         id: 'recipes',
         icon: Sparkles,
-        label: language === 'kn' ? '🍲 ಅಡುಗೆ & ಬಳಕೆ ಸಲಹೆ' : language === 'hi' ? '🍲 व्यंजन व पाक विधि' : language === 'te' ? '🍲 వంటకాలు & చిట్కాలు' : language === 'ta' ? '🍲 சமையல் குறிப்புகள்' : language === 'ml' ? '🍲 പാചകക്കുറിപ്പുകൾ' : '🍲 Recipe & Cooking Tips',
+        label: language === 'kn' ? '🍲 ಅಡುಗೆ & ಬಳಕೆ ಸಲಹೆ' : language === 'hi' ? '🍲 व्यंजन व पाक विधि' : '🍲 Recipe & Cooking Tips',
         query:
           language === 'kn'
             ? 'ತಾಜಾ ಪಾಲಕ್ ಸೊಪ್ಪಿನಿಂದ ಯಾವ ರುಚಿಕರ ಅಡುಗೆಗಳನ್ನು ಮಾಡಬಹುದು ಮತ್ತು ಅದನ್ನು ಹೇಗೆ ಸಂರಕ್ಷಿಸಿಡಬೇಕು?'
             : language === 'hi'
             ? 'ताज़ी पालक से कौन से स्वादिष्ट व्यंजन बनाए जा सकते हैं और इसे कैसे सुरक्षित रखें?'
-            : language === 'te'
-            ? 'పాలకూరతో ఎలాంటి వంటకాలు చేయవచ్చు ಮತ್ತು ఎలా నిల్వ చేయాలి?'
-            : language === 'ta'
-            ? 'பசலைக் கீரையில் என்னென்ன சமையல் செய்யலாம்? அதை எவ்வாறு பாதுகாக்க வேண்டும்?'
-            : language === 'ml'
-            ? 'ചീര ഉപയോഗിച്ച് എന്തൊക്കെ വിഭവങ്ങൾ ഉണ്ടാക്കാം? എങ്ങനെ സൂക്ഷിക്കാം?'
             : 'What dishes can I cook with fresh baby spinach and how should I store it to keep it fresh?',
       },
       {
         id: 'track',
         icon: Package,
-        label: language === 'kn' ? '📦 ಆರ್ಡರ್ ಟ್ರ್ಯಾಕಿಂಗ್' : language === 'hi' ? '📦 ऑर्डर ट्रैकिंग' : language === 'te' ? '📦 ఆర్డర్ ట్రాకింగ్' : language === 'ta' ? '📦 ஆர்டர் நிலை' : language === 'ml' ? '📦 ഓർഡർ ട്രാക്കിംഗ്' : '📦 Track My Order',
+        label: language === 'kn' ? '📦 ಆರ್ಡರ್ ಟ್ರ್ಯಾಕಿಂಗ್' : language === 'hi' ? '📦 ऑर्डर ट्रैकिंग' : '📦 Track My Order',
         query:
           language === 'kn'
             ? 'ನನ್ನ ಆರ್ಡರ್ ಸ್ಥಿತಿಯನ್ನು ಹೇಗೆ ಟ್ರ್ಯಾಕ್ ಮಾಡಬೇಕು?'
             : language === 'hi'
             ? 'मैं अपने ऑर्डर की स्थिति कैसे ट्रैक कर सकता हूँ?'
-            : language === 'te'
-            ? 'నా ఆర్డర్ స్థితిని ఎలా ట్రాక్ చేయాలి?'
-            : language === 'ta'
-            ? 'எனது ஆர்டர் நிலையை எவ்வாறு கண்காணிப்பது?'
-            : language === 'ml'
-            ? 'എന്റെ ഓർഡർ നില എങ്ങനെ ട്രാക്ക് ചെയ്യാം?'
             : 'How can I track my farm harvest order from harvest to delivery?',
       },
     ];
@@ -259,7 +264,7 @@ export const FloatingAIAssistant: React.FC = () => {
 
       recognitionRef.current = recognition;
       recognition.start();
-    } catch (err: any) {
+    } catch {
       setIsListening(false);
       setSpeechError('Microphone permission required.');
     }
@@ -302,7 +307,8 @@ export const FloatingAIAssistant: React.FC = () => {
     setInputText('');
     setLoadingStep('understanding');
 
-    // Simulate natural AI thinking steps with real DB filtering
+    const q = queryText.toLowerCase().trim();
+
     setTimeout(() => {
       setLoadingStep('searching');
     }, 400);
@@ -312,90 +318,91 @@ export const FloatingAIAssistant: React.FC = () => {
     }, 800);
 
     setTimeout(() => {
-      const q = queryText.toLowerCase().trim();
-      let matchedProduce: ProduceListing[] = [];
       let responseText = '';
+      let matchedProduce: ProduceListing[] = [];
 
-      // 1. Check for Vegetable query
-      if (q.includes('veg') || q.includes('ತರಕಾರಿ') || q.includes('सब्जी') || q.includes('కూరగాయ') || q.includes('காய்கறி') || q.includes('പച്ചക്കറി')) {
+      // 1. Vegetables query
+      if (q.includes('veg') || q.includes('ತರಕಾರಿ') || q.includes('सब्जी') || q.includes('கூறுகாய') || q.includes('tomato') || q.includes('potato') || q.includes('onion') || q.includes('carrot') || q.includes('spinach')) {
         matchedProduce = listings.filter((l) =>
           l.category.toLowerCase().includes('veg') ||
           l.name.toLowerCase().includes('tomato') ||
+          l.name.toLowerCase().includes('potato') ||
+          l.name.toLowerCase().includes('onion') ||
           l.name.toLowerCase().includes('carrot') ||
           l.name.toLowerCase().includes('spinach')
-        );
+        ).slice(0, 4);
+
         if (language === 'kn') {
-          responseText = `🥬 ನಮ್ಮ ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಸದ್ಯಕ್ಕೆ ${matchedProduce.length} ತಾಜಾ ತರಕಾರಿಗಳು ಲಭ್ಯವಿವೆ. ಇವುಗಳನ್ನು ರೈತರು ಮುಂಜಾನೆಯೇ ಕೊಯ್ಲು ಮಾಡಿ ನೇರವಾಗಿ ಪೂರೈಸುತ್ತಾರೆ:`;
+          responseText = `ನಮ್ಮ ಪರಿಶೀಲಿತ ರೈತರಿಂದ ಲಭ್ಯವಿರುವ ಪ್ರಮುಖ ಸಾವಯವ ತರಕಾರಿಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nಇವುಗಳನ್ನು ನೇರವಾಗಿ ರೈತರ ಜಮೀನಿನಿಂದಲೇ ತಲುಪಿಸಲಾಗುತ್ತದೆ.`;
         } else if (language === 'hi') {
-          responseText = `🥬 वर्तमान में हमारे पास ${matchedProduce.length} ताज़ी सब्जियां उपलब्ध हैं, जो किसानों द्वारा सीधे खेत से उपलब्ध कराई जा रही हैं:`;
-        } else if (language === 'te') {
-          responseText = `🥬 మా వద్ద ప్రస్తుతం ${matchedProduce.length} తాజా కూరగాయల రకాలు అందుబాటులో ఉన్నాయి:`;
-        } else if (language === 'ta') {
-          responseText = `🥬 தற்போது சந்தையில் ${matchedProduce.length} புதிய காய்கறி வகைகள் கிடைக்கின்றன:`;
-        } else if (language === 'ml') {
-          responseText = `🥬 നിലവിൽ ${matchedProduce.length} പച്ചക്കറികൾ വിപണിയിൽ ലഭ്യമാണ്:`;
+          responseText = `हमारे सत्यापित भारतीय किसानों से उपलब्ध प्रमुख ताज़ी सब्जियां:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nइन्हें सुबह की ताज़ी कटाई के बाद सीधे आपके पास भेजा जाता है।`;
         } else {
-          responseText = `🥬 We currently have ${matchedProduce.length} fresh vegetable listings available directly from Indian growers:`;
+          responseText = `Here are the freshest verified farm vegetables currently listed in PostgreSQL:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} from ${p.farmerName} (${p.farmLocation})`).join('\n• ')}**\n\nEach listing is harvested at dawn with zero middleman holding times.`;
         }
       }
-      // 2. Check for Fruit query
-      else if (q.includes('fruit') || q.includes('mango') || q.includes('apple') || q.includes('ಹಣ್ಣು') || q.includes('फल') || q.includes('పండ్లు') || q.includes('பழம்') || q.includes('പഴങ്ങൾ')) {
+      // 2. Fruits query
+      else if (q.includes('fruit') || q.includes('ಹಣ್ಣು') || q.includes('फल') || q.includes('mango') || q.includes('apple') || q.includes('banana') || q.includes('papaya') || q.includes('orange')) {
         matchedProduce = listings.filter((l) =>
           l.category.toLowerCase().includes('fruit') ||
           l.name.toLowerCase().includes('mango') ||
           l.name.toLowerCase().includes('apple') ||
-          l.name.toLowerCase().includes('dragonfruit')
-        );
+          l.name.toLowerCase().includes('banana') ||
+          l.name.toLowerCase().includes('papaya') ||
+          l.name.toLowerCase().includes('orange')
+        ).slice(0, 4);
+
         if (language === 'kn') {
-          responseText = `🍎 ಸದ್ಯಕ್ಕೆ ಲಭ್ಯವಿರುವ ತಾಜಾ ಸಾವಯವ ಹಣ್ಣುಗಳು (${matchedProduce.length} ವಿಧಗಳು):`;
+          responseText = `ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಲಭ್ಯವಿರುವ ನೈಸರ್ಗಿಕವಾಗಿ ಮಾಗಿದ ತಾಜಾ ಹಣ್ಣುಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit})`).join('\n• ')}**\n\nಯಾವುದೇ ಕೃತಕ ಕಾರ್ಬೈಡ್ ಬಳಸದೆ ನೈಸರ್ಗಿಕವಾಗಿ ಕೊಯ್ಲು ಮಾಡಲಾದ ಹಣ್ಣುಗಳು.`;
         } else if (language === 'hi') {
-          responseText = `🍎 हमारे पास उपलब्ध ताज़े मौसमी फल (${matchedProduce.length} किस्में):`;
+          responseText = `मंडी में उपलब्ध प्राकृतिक रूप से पके ताज़े फल:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit})`).join('\n• ')}**\n\nये फल बिना किसी कृत्रिम रसायन के सीधे बगीचों से तोड़े जाते हैं।`;
         } else {
-          responseText = `🍎 Here are the fresh orchard fruits currently in stock (${matchedProduce.length} items):`;
+          responseText = `Here are naturally tree-ripened farm fruits available in the marketplace:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} by ${p.farmerName}`).join('\n• ')}**\n\nGuaranteed calcium-carbide free and naturally sun-ripened.`;
         }
       }
-      // 3. Check for Spices query
-      else if (q.includes('spice') || q.includes('turmeric') || q.includes('saffron') || q.includes('ಸಾಂಬಾರ') || q.includes('मसाले') || q.includes('సుగంధ') || q.includes('மசாலா')) {
+      // 3. Spices query
+      else if (q.includes('spice') || q.includes('ಸಾಂಬಾರ') || q.includes('मसाले') || q.includes('turmeric') || q.includes('saffron') || q.includes('pepper') || q.includes('cardamom')) {
         matchedProduce = listings.filter((l) =>
           l.category.toLowerCase().includes('spice') ||
           l.name.toLowerCase().includes('turmeric') ||
-          l.name.toLowerCase().includes('saffron')
-        );
+          l.name.toLowerCase().includes('saffron') ||
+          l.name.toLowerCase().includes('pepper') ||
+          l.name.toLowerCase().includes('cardamom')
+        ).slice(0, 4);
+
         if (language === 'kn') {
-          responseText = `🌶️ ಪ್ರಮಾಣೀಕೃತ ರೈತರಿಂದ ನೇರ ಸಾವಯವ ಸಾಂಬಾರ ಪದಾರ್ಥಗಳು:`;
+          responseText = `ನಮ್ಮ ಅಧಿಕೃತ ರೈತರಿಂದ ಸಿಗುವ ಪರಿಶುದ್ಧ ಸಾಂಬಾರ ಪದಾರ್ಥಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nಉನ್ನತ ಕರ್ಕ್ಯುಮಿನ್ ಅರಿಶಿನ ಮತ್ತು ಜಿಐ-ಟ್ಯಾಗ್ ಹೊಂದಿದ ಕಾಶ್ಮೀರಿ ಕೇಸರಿ ಲಭ್ಯವಿದೆ.`;
         } else if (language === 'hi') {
-          responseText = `🌶️ हमारे सत्यापित किसानों द्वारा उपलब्ध कराए गए शुद्ध मसाले:`;
+          responseText = `सत्यापित किसानों से उपलब्ध शुद्ध पारंपरिक मसाले:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nइनमें उच्च-करक्यूमिन हल्दी और शुद्ध कश्मीरी केसर शामिल हैं।`;
         } else {
-          responseText = `🌶️ Verified Indian farmers currently listing natural spices & seasonings:`;
+          responseText = `Here are pure single-origin Indian spices from verified growers:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} (${p.farmerName}, ${p.farmLocation})`).join('\n• ')}**\n\nIncludes Salem High-Curcumin Turmeric and GI-Tagged Kashmir Saffron.`;
         }
       }
-      // 4. Budget / Price query (e.g. Under 150 / 300)
-      else if (q.includes('150') || q.includes('300') || q.includes('under') || q.includes('ಕಡಿಮೆ') || q.includes('कम') || q.includes('లోపు')) {
-        const threshold = q.includes('300') ? 300 : 150;
-        matchedProduce = listings.filter((l) => l.pricePerUnit <= threshold && l.status === 'Active');
+      // 4. Budget under price query
+      else if (q.includes('150') || q.includes('under') || q.includes('ಬೆಲೆ') || q.includes('कीमत') || q.includes('budget') || q.includes('cheap')) {
+        matchedProduce = listings.filter((l) => l.pricePerUnit <= 150).slice(0, 4);
+
         if (language === 'kn') {
-          responseText = `💰 ₹${threshold} ಅಥವಾ ಅದಕ್ಕಿಂತ ಕಡಿಮೆ ದರದಲ್ಲಿ ಲಭ್ಯವಿರುವ ಬೆಳೆಗಳು (${matchedProduce.length} ಬೆಳೆಗಳು):`;
+          responseText = `₹150 ಒಳಗೆ ಲಭ್ಯವಿರುವ ಅತ್ಯುತ್ತಮ ನೇರ ಕೃಷಿ ಬೆಳೆಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit}`).join('\n• ')}**`;
         } else if (language === 'hi') {
-          responseText = `💰 ₹${threshold} से कम में उपलब्ध ताज़ी फसलें (${matchedProduce.length} उत्पाद):`;
+          responseText = `₹150 से कम कीमत में उपलब्ध उत्तम कृषि उपज:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit}`).join('\n• ')}**`;
         } else {
-          responseText = `💰 Fresh farm produce available under ₹${threshold} per unit (${matchedProduce.length} items):`;
+          responseText = `Here are direct farm crops available for under ₹150 per unit:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit} (${p.farmerName})`).join('\n• ')}**`;
         }
       }
-      // 5. Recipe / Cooking & Storage advice
-      else if (q.includes('cook') || q.includes('recipe') || q.includes('spinach') || q.includes('store') || q.includes('ಅಡುಗೆ') || q.includes('व्यंजन') || q.includes('వంటకం') || q.includes('சமையல்')) {
-        matchedProduce = listings.filter((l) => l.name.toLowerCase().includes('spinach') || l.name.toLowerCase().includes('tomato'));
+      // 5. Recipe / Cooking / Storage query
+      else if (q.includes('recipe') || q.includes('cook') || q.includes('ಅಡುಗೆ') || q.includes('व्यंजन') || q.includes('store') || q.includes('ಸಂರಕ್ಷಣೆ')) {
         if (language === 'kn') {
-          responseText = `🍲 **ತಾಜಾ ಪಾಲಕ್ ಸೊಪ್ಪಿನ ಅಡುಗೆ & ಸಂಗ್ರಹಣಾ ಸಲಹೆ:**\n\n• **ಜನಪ್ರಿಯ ಅಡುಗೆಗಳು:** ಪಾಲಕ್ ಪನೀರ್, ದಾಲ್ ಪಾಲಕ್, ಅಥವಾ ಪಾಲಕ್ ಸೊಪ್ಪಿನ ಪಲ್ಯ.\n• **ಸಂಗ್ರಹಣೆ:** ಸೊಪ್ಪನ್ನು ತೊಳೆಯದೆ ಒಣ ಬಟ್ಟೆ ಅಥವಾ ಪೇಪರ್ ಟವಲ್‌ನಲ್ಲಿ ಸುತ್ತಿ ಫ್ರಿಜ್‌ನಲ್ಲಿಟ್ಟರೆ 4-5 ದಿನಗಳವರೆಗೆ ತಾಜಾವಾಗಿರುತ್ತದೆ.\n\n👉 ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಲಭ್ಯವಿರುವ ಬೆಳೆ:`;
+          responseText = `🌿 **ತಾಜಾ ಸೊಪ್ಪು ಮತ್ತು ತರಕಾರಿಗಳ ಬಳಕೆ & ಸಂರಕ್ಷಣೆ ಸಲಹೆ:**\n\n1. **ಪಾಲಕ್ ಪನೀರ್ / ದಾಲ್ ಪಾಲಕ್:** ಪಾಲಕ್ ಸೊಪ್ಪನ್ನು ತಣ್ಣೀರಿನಲ್ಲಿ ತೊಳೆದು, ಬಿಸಿನೀರಿನಲ್ಲಿ 2 ನಿಮಿಷ ಬೇಯಿಸಿ ತಣ್ಣೀರಿನಲ್ಲಿ ಇರಿಸಿದರೆ (blanching) ಹಸಿರು ಬಣ್ಣ ಹಾಗೇ ಉಳಿಯುತ್ತದೆ.\n2. **ಸಂರಕ್ಷಣೆ:** ತೇವಾಂಶವಿಲ್ಲದ ಹತ್ತಿ ಬಟ್ಟೆ ಅಥವಾ ಜಿಪ್‌ಲಾಕ್ ಬ್ಯಾಗ್‌ನಲ್ಲಿ ಸಂಗ್ರಹಿಸಿದರೆ 7-10 ದಿನ ತಾಜಾವಾಗಿರುತ್ತದೆ.`;
         } else if (language === 'hi') {
-          responseText = `🍲 **ताज़ी पालक के व्यंजन और भंडारण विधि:**\n\n• **लोकप्रिय व्यंजन:** पालक पनीर, दाल पालक, और पौष्टिक पालक सूप।\n• **सुरक्षित भंडारण:** बिना धोए कॉटन के कपड़े या पेपर में लपेटकर फ्रिज में रखें। 4-5 दिनों तक ताज़ी रहेगी।\n\n👉 उपलब्ध फसल:`;
+          responseText = `🌿 **ताज़ी पालक व सब्जियों के पाक व भंडारण सुझाव:**\n\n1. **पालक पनीर / दाल पालक:** पालक को ब्लांच (2 मिनट गर्म पानी में डालकर तुरंत ठंडे पानी में) करने से इसका हरा रंग और पोषक तत्व बरकरार रहते हैं।\n2. **सुरक्षित भंडारण:** सूती कपड़े या एयरटाइट बॉक्स में रखने पर यह 7-10 दिनों तक एकदम ताज़ा रहती है।`;
         } else {
-          responseText = `🍲 **Culinary & Storage Guide for Fresh Leafy Greens:**\n\n• **Recommended Dishes:** Palak Paneer, Dal Palak, or fresh vegetable sautés.\n• **Optimal Storage:** Do not wash prior to storage; wrap in dry paper towel and refrigerate for up to 5 days of crisp freshness.\n\n👉 Available from our growers:`;
+          responseText = `🌿 **Culinary & Farm Fresh Storage Tips:**\n\n1. **Palak Paneer & Dal Palak:** Blanch freshly harvested baby spinach leaves in boiling water for 2 minutes, then immediately plunge into cold ice water to preserve its vibrant green chlorophyll and vitamins.\n2. **Storage Tip:** Store unwashed in a breathable container with a dry cloth in the refrigerator to keep leaves crisp for up to 10 days.`;
         }
       }
-      // 6. Order tracking query
-      else if (q.includes('track') || q.includes('order') || q.includes('ಆರ್ಡರ್') || q.includes('ऑर्डर') || q.includes('ఆర్డర్')) {
+      // 6. Track order query
+      else if (q.includes('track') || q.includes('order') || q.includes('ಆರ್ಡರ್') || q.includes('ऑर्डर') || q.includes('status')) {
         if (language === 'kn') {
-          responseText = `📦 **ಆರ್ಡರ್ ಹಂತಗಳು:**\n1. **ಆರ್ಡರ್ ಆಗಿದೆ (Placed)** - ರೈತರಿಗೆ ಮಾಹಿತಿ ತಲುಪಿದೆ\n2. **ಕೊಯ್ಲು (Harvesting)** - ತೋಟದಲ್ಲಿ ತಾಜಾ ಕೊಯ್ಲು\n3. **ರವಾನೆ (Dispatched)** - ಮನೆ ಬಾಗಿಲಿಗೆ ರವಾನೆ\n4. **ತಲುಪಿದೆ (Delivered)** - ನಿಮ್ಮ ಕೈಸೇರಿದೆ.\n\n👉 ನಿಮ್ಮ ಆರ್ಡರ್‌ಗಳನ್ನು ನೇರವಾಗಿ ಕಸ್ಟಮರ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ಪರಿಶೀಲಿಸಬಹುದು.`;
+          responseText = `📦 **ಆರ್ಡರ್ ಹಂತಗಳು:**\n1. **Placed** (ಆರ್ಡರ್ ಸ್ವೀಕರಿಸಲಾಗಿದೆ)\n2. **Harvesting** (ಜಮೀನಿನಲ್ಲಿ ತಾಜಾ ಕೊಯ್ಲು)\n3. **Dispatched** (ನೇರ ರವಾನೆ)\n4. **Delivered** (ನಿಮ್ಮ ಮನೆಗೆ ತಲುಪಿದೆ).\n\n👉 ನೀವು ಗ್ರಾಹಕ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ನೈಜ ಸಮಯದಲ್ಲಿ ಲೈವ್ ಸ್ಥಿತಿಯನ್ನು ವೀಕ್ಷಿಸಬಹುದು.`;
         } else if (language === 'hi') {
           responseText = `📦 **ऑर्डर ट्रैकिंग चरण:**\n1. **Placed** (ऑर्डर दर्ज)\n2. **Harvesting** (खेत में ताज़ी कटाई)\n3. **Dispatched** (सीधा प्रेषण)\n4. **Delivered** (घर पर डिलीवरी)।\n\n👉 आप ग्राहक डैशबोर्ड में लाइव स्थिति देख सकते हैं।`;
         } else {
@@ -435,7 +442,7 @@ export const FloatingAIAssistant: React.FC = () => {
 
       setMessages((prev) => [...prev, aiMsg]);
       setLoadingStep('idle');
-    }, 1200);
+    }, 900);
   };
 
   return (
@@ -448,10 +455,11 @@ export const FloatingAIAssistant: React.FC = () => {
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 p-4 rounded-full bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] shadow-[0_0_35px_rgba(212,175,55,0.45)] border border-[#ffffff]/40 flex items-center gap-2.5 cursor-pointer"
-          title="Ask Auric Arohi AI"
+          className="fixed bottom-6 right-6 z-40 p-3.5 sm:p-4 rounded-full bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] shadow-[0_0_35px_rgba(212,175,55,0.45)] border border-[#ffffff]/40 flex items-center gap-2.5 cursor-pointer hover:brightness-110 active:scale-95"
+          title="Ask Auric Arohi AI (Press anytime)"
+          aria-label="Ask Auric Arohi AI Assistant"
         >
-          <Bot className="w-6 h-6 text-[#0a0a0a]" />
+          <Bot className="w-5 sm:w-6 h-5 sm:h-6 text-[#0a0a0a]" />
           <span className="font-serif font-bold text-xs uppercase tracking-wider hidden sm:inline">
             Ask Auric AI
           </span>
@@ -459,198 +467,241 @@ export const FloatingAIAssistant: React.FC = () => {
         </motion.button>
       )}
 
-      {/* Floating Chat Modal / Drawer */}
+      {/* Floating Chat Panel & Backdrop Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-3 bottom-3 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[460px] h-[85vh] sm:h-[620px] bg-[#0e0d0b] border-2 border-[#d4af37]/50 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.9)] z-50 flex flex-col overflow-hidden backdrop-blur-xl"
-          >
-            {/* Header */}
-            <div className="p-4 sm:p-5 bg-gradient-to-r from-[#1c170e] via-[#14110b] to-[#0e0d0b] border-b border-[#d4af37]/25 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#d4af37] to-[#8a6b18] flex items-center justify-center text-[#0a0a0a] shadow-[0_0_15px_rgba(212,175,55,0.4)]">
-                  <Bot className="w-5 h-5 text-[#0a0a0a]" />
-                </div>
-                <div>
-                  <h3 className="font-serif text-base font-bold text-[#fcfbf7] flex items-center gap-1.5">
-                    <span>Auric Arohi AI</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
-                  </h3>
-                  <p className="text-[10px] font-mono text-[#aba79c]">
-                    Real-time Agricultural Shopping Assistant
-                  </p>
-                </div>
-              </div>
+          <>
+            {/* Dark Backdrop for Mobile / Outside Click Dismissal */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[998]"
+              aria-hidden="true"
+            />
 
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setMessages([])}
-                  className="p-1.5 rounded-lg text-[#8e8b82] hover:text-[#fae69e] hover:bg-white/5"
-                  title="Clear Chat"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-lg text-[#aba79c] hover:text-[#fcfbf7] hover:bg-white/5"
-                  title="Close"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Prompts Carousel */}
-            <div className="p-2.5 bg-[#14110c] border-b border-[#d4af37]/15 overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
-              {quickPrompts.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => handleProcessQuery(p.query)}
-                  className="px-3 py-1.5 rounded-xl bg-[#1e1910] hover:bg-[#2c2414] border border-[#d4af37]/30 text-[11px] font-sans text-[#fae69e] whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                >
-                  <p.icon className="w-3 h-3 text-[#d4af37]" />
-                  <span>{p.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Chat Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 font-sans text-xs">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div
-                    className={`max-w-[85%] p-3.5 rounded-2xl leading-relaxed ${
-                      msg.sender === 'user'
-                        ? 'bg-gradient-to-r from-[#d4af37] to-[#c2981f] text-[#0a0a0a] font-medium rounded-tr-none shadow-md'
-                        : 'bg-[#16130e] border border-[#d4af37]/30 text-[#fcfbf7] rounded-tl-none space-y-3'
-                    }`}
-                  >
-                    <div className="whitespace-pre-line">{msg.text}</div>
-
-                    {/* Render Real Recommended Produce Cards if returned by AI */}
-                    {msg.recommendedProduce && msg.recommendedProduce.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#d4af37]/20">
-                        {msg.recommendedProduce.map((prod) => (
-                          <div
-                            key={prod.id}
-                            onClick={() => {
-                              setIsOpen(false);
-                              navigate('/marketplace');
-                            }}
-                            className="p-2 rounded-xl bg-[#0e0d0a] border border-[#d4af37]/30 hover:border-[#fae69e] transition-all cursor-pointer flex flex-col justify-between space-y-1"
-                          >
-                            <div className="h-16 rounded-lg overflow-hidden bg-[#18150e]">
-                              <img
-                                src={prod.images?.[0] || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea'}
-                                alt={prod.name}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div className="font-serif font-bold text-[11px] text-[#fcfbf7] truncate">
-                              {prod.name}
-                            </div>
-                            <div className="flex items-baseline justify-between text-[10px] font-mono">
-                              <span className="text-[#fae69e] font-bold">₹{prod.pricePerUnit}</span>
-                              <span className="text-[#8e8b82]">/{prod.unit}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+            {/* Viewport-Constrained Sticky Panel */}
+            <div className="fixed inset-x-2 bottom-2 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[460px] z-[999] flex flex-col justify-end pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, y: 25, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 25, scale: 0.96 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full h-[88vh] sm:h-[620px] max-h-[calc(100vh-2rem)] bg-[#0e0d0b] border-2 border-[#d4af37]/60 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.95)] flex flex-col overflow-hidden backdrop-blur-2xl pointer-events-auto ring-1 ring-[#fae69e]/30"
+              >
+                {/* ========================================================================= */}
+                {/* 1. STICKY ALWAYS-VISIBLE HEADER WITH GUARANTEED ACCESSIBLE CLOSE (X) BTN  */}
+                {/* ========================================================================= */}
+                <div className="sticky top-0 z-30 p-3.5 sm:p-4 bg-gradient-to-r from-[#1c170e] via-[#14110b] to-[#0e0d0b] border-b border-[#d4af37]/30 flex items-center justify-between shrink-0 shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 sm:w-10 h-9 sm:h-10 rounded-2xl bg-gradient-to-br from-[#d4af37] to-[#8a6b18] flex items-center justify-center text-[#0a0a0a] shadow-[0_0_15px_rgba(212,175,55,0.4)] shrink-0">
+                      <Bot className="w-5 h-5 text-[#0a0a0a]" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif text-sm sm:text-base font-bold text-[#fcfbf7] flex items-center gap-1.5 leading-none">
+                        <span>Auric Arohi AI</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
+                      </h3>
+                      <p className="text-[10px] font-mono text-[#aba79c] mt-0.5 truncate max-w-[200px] sm:max-w-[260px]">
+                        {t('ai.shoppingAssistant', 'Indian Agricultural Shopping Assistant')}
+                      </p>
+                    </div>
                   </div>
 
-                  {/* Speaker button for AI messages */}
-                  {msg.sender === 'ai' && (
+                  {/* Top-Right Action Controls with Prominent X Button */}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleSpeakText(msg.text)}
-                      className="mt-1 text-[10px] font-mono text-[#8e8b82] hover:text-[#fae69e] flex items-center gap-1 self-start ml-2"
+                      onClick={() => setMessages([])}
+                      className="p-2 rounded-xl text-[#8e8b82] hover:text-[#fae69e] hover:bg-white/5 transition-colors cursor-pointer"
+                      title="Clear Chat History"
+                      aria-label="Clear Chat History"
                     >
-                      {isSpeaking ? <VolumeX className="w-3 h-3 text-[#f87171]" /> : <Volume2 className="w-3 h-3 text-[#d4af37]" />}
-                      <span>{isSpeaking ? 'Stop Audio' : 'Listen'}</span>
+                      <Trash2 className="w-4 h-4" />
                     </button>
+
+                    {/* PROMINENT HIGH-CONTRAST CLOSE BUTTON */}
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(false)}
+                      className="p-2 sm:px-2.5 rounded-xl bg-white/10 hover:bg-[#d4af37] text-[#fcfbf7] hover:text-[#0a0a0a] border border-white/15 hover:border-[#fae69e] transition-all cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+                      title="Close Assistant (Esc)"
+                      aria-label="Close Assistant"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="text-[10px] font-mono font-bold hidden sm:inline">ESC</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* ========================================================================= */}
+                {/* 2. QUICK PROMPTS STRIP                                                   */}
+                {/* ========================================================================= */}
+                <div className="p-2 bg-[#14110c] border-b border-[#d4af37]/15 overflow-x-auto no-scrollbar flex items-center gap-1.5 shrink-0">
+                  {quickPrompts.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleProcessQuery(p.query)}
+                      className="px-2.5 py-1 rounded-xl bg-[#1e1910] hover:bg-[#2c2414] border border-[#d4af37]/30 text-[11px] font-sans text-[#fae69e] whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <p.icon className="w-3 h-3 text-[#d4af37]" />
+                      <span>{p.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* ========================================================================= */}
+                {/* 3. ONLY THIS SCROLLS: CHAT MESSAGES CONTAINER                            */}
+                {/* ========================================================================= */}
+                <div className="flex-1 overflow-y-auto min-h-0 p-3.5 sm:p-4 space-y-3.5 font-sans text-xs">
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                    >
+                      <div
+                        className={`max-w-[88%] p-3.5 rounded-2xl leading-relaxed ${
+                          msg.sender === 'user'
+                            ? 'bg-gradient-to-r from-[#d4af37] to-[#c2981f] text-[#0a0a0a] font-medium rounded-tr-none shadow-md'
+                            : 'bg-[#16130e] border border-[#d4af37]/30 text-[#fcfbf7] rounded-tl-none space-y-2.5'
+                        }`}
+                      >
+                        <div className="whitespace-pre-line text-xs sm:text-[13px]">{msg.text}</div>
+
+                        {/* Produce Cards Embedded Inside AI Chat Response */}
+                        {msg.recommendedProduce && msg.recommendedProduce.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#d4af37]/20">
+                            {msg.recommendedProduce.map((prod) => (
+                              <div
+                                key={prod.id}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  navigate('/marketplace');
+                                }}
+                                className="p-2 rounded-xl bg-[#0e0d0a] border border-[#d4af37]/30 hover:border-[#fae69e] transition-all cursor-pointer flex flex-col justify-between space-y-1 group"
+                              >
+                                <div className="h-16 rounded-lg overflow-hidden bg-[#18140e]">
+                                  <img
+                                    src={getProduceImage(prod)}
+                                    alt={prod.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                  />
+                                </div>
+                                <div className="font-serif font-bold text-[11px] text-[#fcfbf7] truncate">
+                                  {getLocalizedProduceName(prod.name, language)}
+                                </div>
+                                <div className="text-[9px] font-mono text-[#8e8b82] truncate">
+                                  👨🌾 {prod.farmerName}
+                                </div>
+                                <div className="text-[10px] font-mono font-bold text-[#fae69e]">
+                                  ₹{prod.pricePerUnit}/{getLocalizedUnit(prod.unit, language)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Speaker Button on AI Messages */}
+                        {msg.sender === 'ai' && (
+                          <div className="flex items-center justify-between pt-1 border-t border-[#d4af37]/15 text-[10px] font-mono text-[#8e8b82]">
+                            <span>{msg.timestamp}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleSpeakText(msg.text)}
+                              className="inline-flex items-center gap-1 text-[#d4af37] hover:text-[#fae69e] p-1 rounded hover:bg-white/5 cursor-pointer"
+                              title="Listen to response"
+                            >
+                              {isSpeaking ? <VolumeX className="w-3.5 h-3.5 text-[#f87171]" /> : <Volume2 className="w-3.5 h-3.5" />}
+                              <span>{isSpeaking ? 'Mute' : 'Listen'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Real-time Thinking HUD */}
+                  {loadingStep !== 'idle' && (
+                    <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#14120c] border border-[#d4af37]/30 text-[#fae69e] text-xs font-mono animate-pulse">
+                      <Bot className="w-4 h-4 text-[#d4af37] animate-spin" />
+                      <span>
+                        {loadingStep === 'understanding'
+                          ? 'Understanding Indian agricultural query...'
+                          : loadingStep === 'searching'
+                          ? 'Scanning PostgreSQL harvests & verified farmers...'
+                          : 'Synthesizing verified produce recommendations...'}
+                      </span>
+                    </div>
                   )}
-                </div>
-              ))}
 
-              {/* Live Loading Step Indicator */}
-              {loadingStep !== 'idle' && (
-                <div className="flex items-center gap-2 text-xs font-mono text-[#fae69e] bg-[#16130e] p-3 rounded-2xl border border-[#d4af37]/30 max-w-[80%]">
-                  <div className="w-3.5 h-3.5 border-2 border-[#d4af37] border-t-transparent rounded-full animate-spin shrink-0" />
-                  <span>
-                    {loadingStep === 'understanding'
-                      ? 'Understanding query...'
-                      : loadingStep === 'searching'
-                      ? 'Checking PostgreSQL farm listings...'
-                      : 'Preparing recommendation...'}
-                  </span>
-                </div>
-              )}
+                  {liveTranscript && (
+                    <div className="p-2.5 rounded-xl bg-[#1c180e] border border-[#d4af37]/40 text-xs font-mono text-[#fae69e] flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-ping" />
+                      <span className="italic">"{liveTranscript}"</span>
+                    </div>
+                  )}
 
-              {/* Live Microphone Transcript */}
-              {isListening && (
-                <div className="p-3 rounded-2xl bg-[#221c10] border border-[#d4af37] text-xs font-mono text-[#fae69e] animate-pulse flex items-center gap-2">
-                  <Mic className="w-4 h-4 text-[#fae69e]" />
-                  <span>Listening: "{liveTranscript || 'Speak into microphone...'}"</span>
-                </div>
-              )}
+                  {speechError && (
+                    <div className="p-2.5 rounded-xl bg-[#241010] border border-[#f87171]/40 text-xs font-mono text-[#f87171] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{speechError}</span>
+                    </div>
+                  )}
 
-              {speechError && (
-                <div className="p-2 rounded-xl bg-[#2a1010] text-[11px] font-mono text-[#f87171]">
-                  {speechError}
+                  <div ref={chatEndRef} />
                 </div>
-              )}
 
-              <div ref={chatEndRef} />
+                {/* ========================================================================= */}
+                {/* 4. PINNED BOTTOM INPUT BAR                                               */}
+                {/* ========================================================================= */}
+                <div className="sticky bottom-0 z-30 p-3 sm:p-4 bg-[#120f0a] border-t border-[#d4af37]/25 shrink-0">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleProcessQuery(inputText);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="relative flex-1">
+                      <input
+                        ref={inputFieldRef}
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder={t('ai.placeholder', 'Ask about crops, prices, cooking tips or orders...')}
+                        className="w-full pl-3.5 pr-10 py-3 rounded-2xl bg-[#1a160f] border border-[#d4af37]/40 text-xs text-[#fcfbf7] placeholder-[#7a766e] focus:outline-none focus:border-[#fae69e] focus:ring-1 focus:ring-[#fae69e] shadow-inner"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleToggleVoice}
+                        className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-all cursor-pointer ${
+                          isListening
+                            ? 'bg-[#ef4444] text-white animate-pulse shadow-[0_0_10px_#ef4444]'
+                            : 'text-[#d4af37] hover:text-[#fae69e] hover:bg-white/5'
+                        }`}
+                        title={isListening ? 'Stop Voice Recording' : 'Speak Your Query (13 Languages)'}
+                        aria-label="Voice Input"
+                      >
+                        {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!inputText.trim()}
+                      className="p-3 rounded-2xl bg-gradient-to-r from-[#fae69e] to-[#d4af37] text-[#0a0a0a] disabled:opacity-40 disabled:cursor-not-allowed hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
+                      title="Send Query"
+                      aria-label="Send Query"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
             </div>
-
-            {/* Chat Input Bar */}
-            <div className="p-3 sm:p-4 bg-[#14110c] border-t border-[#d4af37]/25 flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleToggleVoice}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer ${
-                  isListening
-                    ? 'bg-[#ef4444] border-white text-white animate-pulse'
-                    : 'bg-[#1e1910] border-[#d4af37]/30 text-[#fae69e] hover:bg-[#2c2414]'
-                }`}
-                title="Voice Input"
-              >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              </button>
-
-              <input
-                ref={inputFieldRef}
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleProcessQuery(inputText);
-                }}
-                placeholder={t('ai.placeholder', 'Ask about produce, recipes, farmers or orders...')}
-                className="flex-1 px-4 py-3 rounded-2xl bg-[#0e0d0b] border border-[#d4af37]/35 text-xs text-[#fcfbf7] placeholder-[#736f66] focus:outline-none focus:border-[#fae69e]"
-              />
-
-              <button
-                type="button"
-                onClick={() => handleProcessQuery(inputText)}
-                disabled={!inputText.trim()}
-                className="p-3 rounded-2xl bg-gradient-to-r from-[#fae69e] to-[#d4af37] text-[#0a0a0a] disabled:opacity-40 transition-all cursor-pointer hover:brightness-110 active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>

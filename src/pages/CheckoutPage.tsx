@@ -27,12 +27,14 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useOrders } from '../context/OrdersContext';
 import { useLanguage } from '../context/LanguageContext';
+import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 
 export const CheckoutPage: React.FC = () => {
   const { items, subtotal, clearCart, removeFromCart, updateQuantity } = useCart();
   const { isLoggedIn, userRole, user } = useAuth();
   const { placeOrder } = useOrders();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
 
   // Delivery method & Delivery fields
@@ -474,14 +476,14 @@ export const CheckoutPage: React.FC = () => {
                     className="p-3 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 flex items-center justify-between gap-3"
                   >
                     <img
-                      src={item.image}
+                      src={getProduceImage(item)}
                       alt={item.name}
                       className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
                     />
 
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-xs sm:text-sm text-[#fcfbf7] truncate">
-                        {item.name}
+                        {getLocalizedProduceName(item.name, language)}
                       </h4>
                       <div className="text-[10px] font-mono text-[#8e8b82] flex items-center gap-1">
                         <span>👨🌾 {item.farmerName}</span>
@@ -492,7 +494,7 @@ export const CheckoutPage: React.FC = () => {
                         )}
                       </div>
                       <div className="text-xs font-mono text-[#fae69e] font-bold mt-0.5">
-                        ₹{item.price} /{item.unit}
+                        ₹{item.price} /{getLocalizedUnit(item.unit, language)}
                       </div>
                     </div>
 

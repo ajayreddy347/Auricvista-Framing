@@ -28,6 +28,7 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 import { GoogleFarmMap } from './GoogleFarmMap';
 
 interface ProductDetailModalProps {
@@ -83,7 +84,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
       {
         productId: produce.id,
         name: produce.name,
-        image: produce.images && produce.images[0] ? produce.images[0] : 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea',
+        image: getProduceImage(produce),
         price: produce.pricePerUnit,
         unit: produce.unit,
         farmerName: produce.farmerName,
@@ -191,7 +192,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Price Tag */}
               <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-[#d4af37]/60 text-xs sm:text-sm font-mono font-bold text-[#fae69e] shadow-lg">
-                ₹{produce.pricePerUnit} / {produce.unit}
+                ₹{produce.pricePerUnit} / {getLocalizedUnit(produce.unit, language)}
               </div>
 
               {/* Harvest Date Tag */}
@@ -204,10 +205,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                 <div>
                   <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#c9a227]">
-                    {produce.category} • {t('market.inStock', 'Direct Harvest')}
+                    {getLocalizedCategory(produce.category, language)} • {t('market.inStock', 'Direct Harvest')}
                   </span>
                   <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#fcfbf7] drop-shadow-md">
-                    {produce.name}
+                    {getLocalizedProduceName(produce.name, language)}
                   </h2>
                 </div>
               </div>

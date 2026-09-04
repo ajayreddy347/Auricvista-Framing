@@ -11,7 +11,7 @@ export const ImpactPage: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="min-h-screen bg-[#070707] text-[#fcfbf7] pt-20"
+      className="min-h-screen bg-transparent text-[#fcfbf7] pt-20"
     >
       <CommunityImpact />
       <SurplusProduce />

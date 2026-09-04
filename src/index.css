@@ -180,3 +180,102 @@
   background-color: rgba(212, 175, 55, 0.35);
 }
 
+/* ========================================================================= */
+/* UNIVERSAL SCROLLBAR STYLING (Eliminates white/grey browser scrollbars)    */
+/* ========================================================================= */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Global Subtle Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #070707;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #262010;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* ========================================================================= */
+/* GLOBAL FIXED CINEMATIC AV BACKGROUND & METALLIC SHINE EFFECT             */
+/* ========================================================================= */
+@keyframes avMetallicShine {
+  0% {
+    transform: translateX(-140%) translateY(-15%) rotate(22deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.65;
+  }
+  50% {
+    transform: translateX(0%) translateY(0%) rotate(22deg);
+    opacity: 0.85;
+  }
+  80% {
+    transform: translateX(130%) translateY(15%) rotate(22deg);
+    opacity: 0.65;
+  }
+  90% {
+    transform: translateX(150%) translateY(18%) rotate(22deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-140%) translateY(-15%) rotate(22deg);
+    opacity: 0;
+  }
+}
+
+@keyframes avAmbientGlow {
+  0%, 100% {
+    opacity: 0.28;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.03);
+  }
+}
+
+.animate-av-metallic-shine {
+  animation: avMetallicShine 13s ease-in-out infinite;
+  background: linear-gradient(
+    120deg,
+    transparent 0%,
+    transparent 20%,
+    rgba(255, 235, 170, 0.05) 30%,
+    rgba(255, 245, 205, 0.25) 42%,
+    rgba(255, 255, 245, 0.55) 48%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(255, 255, 245, 0.55) 52%,
+    rgba(255, 245, 205, 0.25) 58%,
+    rgba(255, 235, 170, 0.05) 70%,
+    transparent 80%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+}
+
+.animate-av-halo-breathe {
+  animation: avAmbientGlow 11s ease-in-out infinite;
+}
+
+
+

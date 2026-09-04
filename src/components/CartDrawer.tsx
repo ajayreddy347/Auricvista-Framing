@@ -18,6 +18,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { SmartCartBuilderModal } from './SmartCartBuilderModal';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -30,8 +32,9 @@ export const CartDrawer: React.FC = () => {
     totalItems,
     subtotal,
   } = useCart();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
+  const [isSmartCartOpen, setIsSmartCartOpen] = React.useState(false);
 
   useEffect(() => {
     if (!isCartOpen) return;
@@ -163,14 +166,24 @@ export const CartDrawer: React.FC = () => {
                         {t('cart.emptySub', 'Explore our live marketplace to select fresh produce directly from certified regional farmers.')}
                       </p>
                     </div>
-                    <Link
-                      to="/marketplace"
-                      onClick={closeCart}
-                      className="mt-2 inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl text-xs font-semibold uppercase tracking-wider text-[#0a0a0a] bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] hover:brightness-110 shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] transition-all cursor-pointer"
-                    >
-                      <span>{t('cart.exploreMarket', 'Browse Marketplace')}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
+                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsSmartCartOpen(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl text-xs font-semibold font-serif uppercase tracking-wider text-[#fae69e] bg-[#221c10] hover:bg-[#2e2616] border border-[#d4af37]/50 shadow-md transition-all cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4 text-[#d4af37]" />
+                        <span>Build Smart Routine</span>
+                      </button>
+                      <Link
+                        to="/marketplace"
+                        onClick={closeCart}
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-2xl text-xs font-semibold uppercase tracking-wider text-[#0a0a0a] bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] hover:brightness-110 shadow-[0_0_20px_-5px_rgba(212,175,55,0.4)] transition-all cursor-pointer"
+                      >
+                        <span>{t('cart.exploreMarket', 'Browse Marketplace')}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   /* Cart Items */
@@ -194,7 +207,7 @@ export const CartDrawer: React.FC = () => {
                         <div>
                           <div className="flex items-start justify-between gap-2">
                             <h4 className="font-serif text-sm sm:text-base font-bold text-[#fcfbf7] truncate">
-                              {item.name}
+                              {getLocalizedProduceName(item.name, language)}
                             </h4>
                             <button
                               type="button"
@@ -224,7 +237,7 @@ export const CartDrawer: React.FC = () => {
                           <div className="font-mono text-sm font-bold text-[#fae69e]">
                             ₹{item.price * item.quantity}
                             <span className="text-[10px] text-[#8e8b82] font-normal ml-1">
-                              (₹{item.price}/{item.unit})
+                              (₹{item.price}/{getLocalizedUnit(item.unit, language)})
                             </span>
                           </div>
 
@@ -292,6 +305,12 @@ export const CartDrawer: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Personalized Smart Cart Routine Builder Modal */}
+      <SmartCartBuilderModal
+        isOpen={isSmartCartOpen}
+        onClose={() => setIsSmartCartOpen(false)}
+      />
     </AnimatePresence>
   );
 };

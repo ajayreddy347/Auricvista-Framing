@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import React from 'react';
 import { motion } from 'motion/react';
 import {
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 
 export const TransparentPricing: React.FC = () => {
+  const { t } = useLanguage();
   const breakdown = [
     {
       id: 'farmer',
@@ -75,7 +77,7 @@ export const TransparentPricing: React.FC = () => {
   return (
     <section
       id="transparent-pricing-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient gold glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -101,7 +103,7 @@ export const TransparentPricing: React.FC = () => {
             >
               <Coins className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                100% Transparent Economics
+                {t('pricing.eyebrow', '100% Transparent Economics')}
               </span>
             </div>
           </motion.div>
@@ -112,7 +114,7 @@ export const TransparentPricing: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Where Your Money Goes
+              {t('pricing.heading', 'Where Your Money Goes')}
             </span>
           </motion.h2>
 
@@ -121,7 +123,7 @@ export const TransparentPricing: React.FC = () => {
             id="pricing-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            No hidden middleman markups. See exactly how every rupee is distributed.
+            {t('pricing.subtext', 'No hidden middleman markups. See exactly how every rupee is distributed.')}
           </motion.p>
         </motion.div>
 
@@ -143,15 +145,15 @@ export const TransparentPricing: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#d4af37]/20">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-[#c9a227]">
-                  SAMPLE ORDER BENCHMARK
+                  {t('pricing.benchmarkTitle', 'SAMPLE ORDER BENCHMARK')}
                 </span>
                 <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-[#f5f3eb] mt-1">
-                  Customer pays <span className="text-[#fae69e]">₹100</span>
+                  {t('pricing.customerPays', 'Customer pays')} <span className="text-[#fae69e]">₹100</span>
                 </h3>
               </div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#18150d] border border-[#d4af37]/30 text-xs font-mono text-[#dcd7c9] self-start sm:self-auto">
                 <Percent className="w-3.5 h-3.5 text-[#34d399]" />
-                <span>Zero Hidden Commissions</span>
+                <span>{t('pricing.zeroHidden', 'Zero Hidden Commissions')}</span>
               </div>
             </div>
 
@@ -188,9 +190,9 @@ export const TransparentPricing: React.FC = () => {
 
               {/* Bar Legend Labels */}
               <div className="flex justify-between text-[11px] font-mono mt-2.5 text-[#8e8b82]">
-                <span className="text-[#fae69e] font-semibold">78% to Farmer</span>
-                <span className="text-[#d4af37]">12% Delivery</span>
-                <span className="text-[#aba79c]">10% Platform</span>
+                <span className="text-[#fae69e] font-semibold">{t('pricing.farmerShare', '78% to Farmer')}</span>
+                <span className="text-[#d4af37]">{t('pricing.deliveryShare', '12% Delivery')}</span>
+                <span className="text-[#aba79c]">{t('pricing.platformShare', '10% Platform')}</span>
               </div>
             </div>
 
@@ -241,13 +243,13 @@ export const TransparentPricing: React.FC = () => {
             id="pricing-bold-gold-line"
             className="text-lg sm:text-xl font-serif font-semibold text-[#fae69e] tracking-wide"
           >
-            No Hidden Middleman Markups.
+            {t('pricing.boldLine', 'No Hidden Middleman Markups.')}
           </p>
           <p
             id="pricing-disclaimer"
             className="mt-2 text-xs text-[#78756d] font-sans"
           >
-            Actual distribution may vary by product, farmer, and delivery distance.
+            {t('pricing.disclaimer', 'Actual distribution may vary by product, farmer, and delivery distance.')}
           </p>
         </motion.div>
       </div>

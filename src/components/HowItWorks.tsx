@@ -97,12 +97,13 @@ export const HowItWorks: React.FC = () => {
   return (
     <section
       id="how-it-works"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#0e140f] via-[#0d160e] to-[#0c120d] overflow-hidden"
     >
-      {/* Background ambient lighting */}
+      {/* Background subtle organic forest & gold atmosphere */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
-        <div className="absolute top-1/3 right-1/4 w-[600px] h-[450px] rounded-full gold-ambient-radial blur-3xl opacity-30" />
-        <div className="absolute inset-0 bg-subtle-grid opacity-25 mask-gradient" />
+        <div className="absolute top-1/4 right-1/4 w-[600px] h-[450px] bg-[radial-gradient(ellipse,rgba(52,211,153,0.06)_0%,transparent_70%)] blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[350px] bg-[radial-gradient(ellipse,rgba(212,175,55,0.05)_0%,transparent_70%)] blur-3xl" />
+        <div className="absolute inset-0 bg-subtle-grid opacity-15 mask-gradient" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full">
@@ -115,9 +116,9 @@ export const HowItWorks: React.FC = () => {
           className="text-center max-w-3xl mx-auto mb-16 sm:mb-20"
         >
           <motion.div variants={itemFadeUp} className="mb-4 inline-block">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#14120c]/90 border border-[#d4af37]/40 backdrop-blur-md shadow-[0_0_20px_-5px_rgba(212,175,55,0.25)]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#162015]/90 border border-[#d4af37]/40 backdrop-blur-md shadow-[0_0_20px_-5px_rgba(212,175,55,0.25)]">
               <Sparkles className="w-3.5 h-3.5 text-[#fae69e]" />
-              <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#fae69e] uppercase">
+              <span className="text-[11px] font-mono font-bold tracking-[0.2em] text-[#fae69e] uppercase">
                 {t('how.badge', 'Simple 4-Step Process')}
               </span>
             </div>
@@ -125,14 +126,14 @@ export const HowItWorks: React.FC = () => {
 
           <motion.h2
             variants={itemFadeUp}
-            className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-[#fcfbf7] leading-[1.12]"
+            className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-[#fcfbf7] leading-[1.12]"
           >
             <span>{t('how.title1', 'How Auric Arohi Works')}</span>
           </motion.h2>
 
           <motion.p
             variants={itemFadeUp}
-            className="mt-4 sm:mt-5 text-base sm:text-lg text-[#aba79c] font-sans leading-relaxed max-w-2xl mx-auto"
+            className="mt-4 sm:mt-5 text-base sm:text-lg text-[#d0cbc0] font-sans leading-relaxed max-w-2xl mx-auto"
           >
             {t('how.subtitle', 'A seamless direct bridge connecting growers and consumers with total transparency.')}
           </motion.p>
@@ -140,66 +141,52 @@ export const HowItWorks: React.FC = () => {
 
         {/* 4 Steps Grid */}
         <motion.div
-          variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          variants={containerVariants}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative"
         >
-          {steps.map((step, idx) => {
+          {steps.map((step, index) => {
             const Icon = step.icon;
-            const isLast = idx === steps.length - 1;
 
             return (
-              <div key={idx} className="relative flex flex-col">
-                <motion.div
-                  variants={stepCardVariants}
-                  className="relative flex-1 p-6 sm:p-7 rounded-3xl bg-[#0e0d0b]/85 border border-[#d4af37]/30 hover:border-[#d4af37] backdrop-blur-xl transition-all duration-300 shadow-[0_0_30px_-10px_rgba(212,175,55,0.15)] hover:shadow-[0_0_40px_-5px_rgba(212,175,55,0.35)] flex flex-col justify-between overflow-hidden group hover:-translate-y-1"
-                >
-                  {/* Oversized background numeral */}
-                  <div
-                    className="absolute -top-3 -right-2 font-serif text-7xl sm:text-8xl font-black text-[#d4af37]/[0.08] group-hover:text-[#d4af37]/[0.15] select-none pointer-events-none transition-colors tracking-tighter"
-                    aria-hidden="true"
-                  >
-                    {step.stepNumber}
-                  </div>
-
-                  <div>
-                    {/* Step tag & Icon */}
-                    <div className="flex items-center justify-between mb-5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-serif text-xl sm:text-2xl font-bold gold-text-metallic">
-                          {step.stepNumber}
-                        </span>
-                        <span className="h-[1px] w-6 bg-[#d4af37]/40" />
-                      </div>
-
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#2a2412] to-[#12100a] border border-[#d4af37]/40 flex items-center justify-center text-[#fae69e] shadow-sm group-hover:scale-105 transition-transform">
-                        <Icon className="w-5 h-5" />
-                      </div>
+              <motion.div
+                key={step.stepNumber}
+                variants={stepCardVariants}
+                whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                className="group relative flex flex-col justify-between p-6 sm:p-7 rounded-3xl bg-[#131c13]/90 border border-[#d4af37]/30 hover:border-[#fae69e]/70 backdrop-blur-md shadow-lg hover:shadow-[0_0_35px_rgba(212,175,55,0.2)] transition-all duration-300 overflow-hidden"
+              >
+                {/* Step Top */}
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-[#1c281b] border border-[#d4af37]/45 flex items-center justify-center text-[#fae69e] group-hover:scale-110 group-hover:border-[#fae69e] transition-all duration-300 shadow-md">
+                      <Icon className="w-6 h-6 text-[#d4af37] group-hover:text-[#fae69e]" />
                     </div>
-
-                    <h3 className="font-serif text-lg sm:text-xl font-bold text-[#f5f3eb] mb-1">
-                      {t(step.titleKey, step.defaultTitle)}
-                    </h3>
-                    <p className="text-[11px] font-mono uppercase tracking-wider text-[#c9a227] mb-3">
-                      {t(step.subtitleKey, step.defaultSub)}
-                    </p>
-                    <p className="text-xs sm:text-sm text-[#a39e93] leading-relaxed font-sans">
-                      {t(step.descKey, step.defaultDesc)}
-                    </p>
-                  </div>
-
-                  <div className="pt-5 mt-5 border-t border-[#d4af37]/15 flex items-center justify-between">
-                    <span className="text-[10px] font-mono text-[#8e8b82] uppercase">
-                      {t('how.tier', 'Step Standard')}
-                    </span>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#fae69e] font-semibold">
-                      {t(step.highlightKey, step.defaultHighlight)}
+                    <span className="font-mono font-bold text-xl text-[#d4af37]/50 group-hover:text-[#fae69e] transition-colors">
+                      {step.stepNumber}
                     </span>
                   </div>
-                </motion.div>
-              </div>
+
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#34d399] font-semibold block mb-1">
+                    {t(step.subtitleKey, step.defaultSub)}
+                  </span>
+                  <h3 className="font-serif text-xl font-bold text-[#fcfbf7] group-hover:text-[#fae69e] transition-colors leading-snug mb-3">
+                    {t(step.titleKey, step.defaultTitle)}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#aba79c] leading-relaxed font-sans">
+                    {t(step.descKey, step.defaultDesc)}
+                  </p>
+                </div>
+
+                {/* Badge Footer */}
+                <div className="mt-6 pt-4 border-t border-[#d4af37]/15 flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-[#fae69e] font-semibold bg-[#1a2618] px-2.5 py-1 rounded-full border border-[#d4af37]/30">
+                    {t(step.highlightKey, step.defaultHighlight)}
+                  </span>
+                  <CheckCircle2 className="w-4 h-4 text-[#34d399]" />
+                </div>
+              </motion.div>
             );
           })}
         </motion.div>

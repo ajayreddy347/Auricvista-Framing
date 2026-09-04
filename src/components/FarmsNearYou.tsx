@@ -1,3 +1,5 @@
+import { useLanguage } from '../context/LanguageContext';
+import { getLocalizedProduceName } from '../utils/produceLocalization';
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import {
@@ -13,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const FarmsNearYou: React.FC = () => {
+  const { language, t } = useLanguage();
   const [activePin, setActivePin] = useState<number>(0);
 
   const pins = [
@@ -89,7 +92,7 @@ export const FarmsNearYou: React.FC = () => {
   return (
     <section
       id="farms-near-you-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient background gold glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -115,7 +118,7 @@ export const FarmsNearYou: React.FC = () => {
             >
               <Navigation className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Hyperlocal Radius
+                {t('farms.eyebrow', 'Hyperlocal Radius')}
               </span>
             </div>
           </motion.div>
@@ -126,7 +129,7 @@ export const FarmsNearYou: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Freshness Starts Nearby
+              {t('farms.heading', 'Freshness Starts Nearby')}
             </span>
           </motion.h2>
 
@@ -135,7 +138,7 @@ export const FarmsNearYou: React.FC = () => {
             id="farms-near-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            Discover participating farms close to you.
+            {t('farms.subtext', 'Discover participating farms close to you.')}
           </motion.p>
         </motion.div>
 
@@ -279,7 +282,7 @@ export const FarmsNearYou: React.FC = () => {
                   {/* Available Produce Small Tags */}
                   <div className="mb-5">
                     <span className="text-[10px] font-mono uppercase tracking-widest text-[#8e8b82] block mb-2">
-                      FRESH HARVEST MANIFEST:
+                      {t('farms.manifestTitle', 'FRESH HARVEST MANIFEST:')}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {currentFarm.products.map((prod, idx) => (
@@ -309,7 +312,7 @@ export const FarmsNearYou: React.FC = () => {
               id="view-all-nearby-farms-btn"
               className="group relative inline-flex items-center justify-center gap-3 px-9 py-4 rounded-full font-medium text-xs sm:text-sm uppercase tracking-[0.14em] text-[#f5f3eb] bg-[#12110c]/85 hover:bg-[#d4af37]/15 border border-[#d4af37]/45 hover:border-[#d4af37] backdrop-blur-md shadow-[0_0_20px_-8px_rgba(212,175,55,0.2)] hover:shadow-[0_0_30px_-5px_rgba(212,175,55,0.4)] hover:scale-[1.02] active:scale-[0.99] transition-all duration-300 cursor-pointer"
             >
-              <span>VIEW ALL NEARBY FARMS</span>
+              <span>{t('farms.viewAllNearby', 'VIEW ALL NEARBY FARMS')}</span>
               <ArrowRight className="w-4 h-4 text-[#d4af37] group-hover:translate-x-1 transition-transform duration-300" />
             </button>
           </div>

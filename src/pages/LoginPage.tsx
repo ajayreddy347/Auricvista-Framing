@@ -170,7 +170,7 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 flex flex-col justify-between bg-[#070707] text-[#f5f3eb] font-sans">
+    <div className="min-h-screen pt-24 pb-16 flex flex-col justify-between bg-transparent text-[#f5f3eb] font-sans">
       {/* Background radial gold glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] rounded-full gold-ambient-radial blur-3xl opacity-30" />
@@ -179,6 +179,14 @@ export const LoginPage: React.FC = () => {
       <div className="relative z-10 max-w-md mx-auto w-full px-4 sm:px-6 my-auto">
         {/* Top Branding Eyebrow */}
         <div className="text-center mb-8">
+          <Link to="/" className="inline-block mb-4 group cursor-pointer" title="Go to Home">
+            <img
+              src="/assets/logo/auric-arohi-logo.png"
+              alt="Auric Arohi Logo"
+              className="h-16 sm:h-20 w-auto object-contain mx-auto filter drop-shadow-[0_0_25px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-transform duration-300"
+            />
+          </Link>
+
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#14120c]/80 border border-[#d4af37]/35 backdrop-blur-md shadow-[0_0_15px_-5px_rgba(212,175,55,0.2)] mb-4">
             <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
             <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">

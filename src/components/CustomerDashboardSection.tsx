@@ -34,12 +34,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { WriteReviewModal } from './WriteReviewModal';
 import { FarmerProfileModal, FarmerProfileData } from './FarmerProfileModal';
 import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 
 export const CustomerDashboardSection: React.FC = () => {
   const { isLoggedIn, userRole, user } = useAuth();
   const { orders, isLoading } = useOrders();
   const { addToCart, openCart } = useCart();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
 
   const [selectedTab, setSelectedTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
@@ -118,7 +119,7 @@ export const CustomerDashboardSection: React.FC = () => {
   return (
     <section
       id="customer-dashboard-section"
-      className="relative py-24 px-4 sm:px-6 lg:px-8 bg-[#070707] text-[#fcfbf7] min-h-screen border-t border-[#d4af37]/15"
+      className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-[#fcfbf7] min-h-screen border-t border-[#d4af37]/15"
     >
       <div className="max-w-7xl mx-auto space-y-8">
         {/* 1. CUSTOMER WELCOME HEADER */}
@@ -370,9 +371,9 @@ export const CustomerDashboardSection: React.FC = () => {
                               loading="lazy"
                             />
                             <div>
-                              <h4 className="font-serif font-bold text-sm text-[#f5f3eb]">{item.name}</h4>
+                              <h4 className="font-serif font-bold text-sm text-[#f5f3eb]">{getLocalizedProduceName(item.name, language)}</h4>
                               <div className="text-[11px] font-mono text-[#8e8b82]">
-                                {item.quantity} {item.unit} × ₹{item.price}
+                                {item.quantity} {getLocalizedUnit(item.unit, language)} × ₹{item.price}
                               </div>
 
                               {/* Clickable Farmer Connection with Farmer ID */}

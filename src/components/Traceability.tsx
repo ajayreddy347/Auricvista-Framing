@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import React from 'react';
 import { motion } from 'motion/react';
 import {
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 
 export const Traceability: React.FC = () => {
+  const { t } = useLanguage();
   const steps = [
     {
       id: 'farm',
@@ -94,7 +96,7 @@ export const Traceability: React.FC = () => {
   return (
     <section
       id="traceability-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient background gold glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -120,7 +122,7 @@ export const Traceability: React.FC = () => {
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                End-to-End Verification
+                {t('trace.eyebrow', 'End-to-End Verification')}
               </span>
             </div>
           </motion.div>
@@ -131,7 +133,7 @@ export const Traceability: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Where Did Your Food Come From?
+              {t('trace.heading', 'Where Did Your Food Come From?')}
             </span>
           </motion.h2>
 
@@ -140,7 +142,7 @@ export const Traceability: React.FC = () => {
             id="traceability-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            Follow the journey of your produce, from soil to doorstep.
+            {t('trace.subtext', 'Follow the journey of your produce, from soil to doorstep.')}
           </motion.p>
         </motion.div>
 
@@ -213,7 +215,7 @@ export const Traceability: React.FC = () => {
               id="traceability-guarantee-line"
               className="text-xs sm:text-sm text-[#9b978d] font-sans tracking-normal max-w-2xl mx-auto"
             >
-              Every order can be traced back to the exact farm and farmer it came from.
+              {t('trace.guarantee', 'Every order can be traced back to the exact farm and farmer it came from.')}
             </p>
           </motion.div>
         </div>

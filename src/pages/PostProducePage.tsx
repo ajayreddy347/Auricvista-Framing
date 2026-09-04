@@ -104,44 +104,22 @@ export const PostProducePage: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!productName.trim()) {
-      newErrors.productName =
-        language === 'kn'
-          ? 'ದಯವಿಟ್ಟು ಬೆಳೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.'
-          : language === 'hi'
-          ? 'कृपया फसल का नाम दर्ज करें।'
-          : 'Produce name is required.';
+      newErrors.productName = t('post.errorName', 'Produce name is required.');
     }
     if (!quantity || Number(quantity) <= 0) {
-      newErrors.quantity =
-        language === 'kn'
-          ? 'ದಯವಿಟ್ಟು ಮಾನ್ಯ ಪ್ರಮಾಣವನ್ನು ನಮೂದಿಸಿ.'
-          : language === 'hi'
-          ? 'कृपया वैध मात्रा दर्ज करें।'
-          : 'Please enter a valid quantity greater than zero.';
+      newErrors.quantity = t('post.errorQuantity', 'Please enter a valid quantity greater than zero.');
     }
     if (!pricePerUnit || Number(pricePerUnit) <= 0) {
-      newErrors.pricePerUnit =
-        language === 'kn'
-          ? 'ಪ್ರತಿ ಯೂನಿಟ್ ಬೆಲೆ ₹0 ಕ್ಕಿಂತ ಹೆಚ್ಚಿರಬೇಕು.'
-          : language === 'hi'
-          ? 'कीमत शून्य से अधिक होनी चाहिए।'
-          : 'Price per unit must be greater than ₹0.';
+      newErrors.pricePerUnit = t('post.errorPrice', 'Price per unit must be greater than ₹0.');
     }
     if (!harvestDate) {
-      newErrors.harvestDate =
-        language === 'kn' ? 'ಕೊಯ್ಲಿನ ದಿನಾಂಕ ಕಡ್ಡಾಯ.' : 'Harvest date is required.';
+      newErrors.harvestDate = t('post.errorHarvestDate', 'Harvest date is required.');
     }
     if (!farmLocation.trim()) {
-      newErrors.farmLocation =
-        language === 'kn' ? 'ತೋಟ / ಸ್ಥಳದ ಮಾಹಿತಿ ಕಡ್ಡಾಯ.' : 'Farm location is required.';
+      newErrors.farmLocation = t('post.errorLocation', 'Farm location is required.');
     }
     if (!description.trim() || description.trim().length < 10) {
-      newErrors.description =
-        language === 'kn'
-          ? 'ದಯವಿಟ್ಟು ಕನಿಷ್ಠ 10 ಅಕ್ಷರಗಳ ಕೃಷಿ ವಿವರಣೆ ನೀಡಿ (ಅಥವಾ AI ಬಟನ್ ಬಳಸಿ).'
-          : language === 'hi'
-          ? 'कृपया कम से कम 10 अक्षरों का विवरण लिखें (या AI बटन का उपयोग करें)।'
-          : 'Please provide a brief cultivation description (or use AI generation).';
+      newErrors.description = t('post.errorDescription', 'Please provide a brief cultivation description (or use AI generation).');
     }
 
     setErrors(newErrors);
@@ -152,12 +130,7 @@ export const PostProducePage: React.FC = () => {
     if (!productName.trim()) {
       setErrors((prev) => ({
         ...prev,
-        productName:
-          language === 'kn'
-            ? 'ದಯವಿಟ್ಟು ಮೊದಲು ಬೆಳೆಯ ಹೆಸರನ್ನು ನಮೂದಿಸಿ.'
-            : language === 'hi'
-            ? 'कृपया पहले फसल का नाम दर्ज करें।'
-            : 'Please enter the produce name first.',
+        productName: t('post.errorNameFirst', 'Please enter the produce name first.'),
       }));
       return;
     }
@@ -254,7 +227,7 @@ export const PostProducePage: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      className="min-h-screen bg-[#070707] text-[#fcfbf7] pt-24 pb-20 relative overflow-hidden"
+      className="min-h-screen bg-transparent text-[#fcfbf7] pt-24 pb-20 relative overflow-hidden"
     >
       {/* Background ambient gold aura */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -447,8 +420,8 @@ export const PostProducePage: React.FC = () => {
                   <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
                   <span>
                     {isGeneratingAiDesc
-                      ? (language === 'kn' ? 'AI ವಿವರಣೆ ಸೃಷ್ಟಿಸಲಾಗುತ್ತಿದೆ...' : language === 'hi' ? 'विवरण तैयार हो रहा है...' : 'Generating Description...')
-                      : (language === 'kn' ? '✨ AI ಮೂಲಕ ವಿವರಣೆ ಸೃಷ್ಟಿಸಿ' : language === 'hi' ? '✨ AI से विवरण बनाएं' : language === 'te' ? '✨ AI తో వివరణ రాయండి' : language === 'ta' ? '✨ AI மூலம் விவரக்குறிப்பு' : language === 'ml' ? '✨ AI വിവരണം തയ്യാറാക്കുക' : '✨ Generate Description with AI')}
+                      ? t('post.generatingDesc', 'Generating Description...')
+                      : t('post.generateDescAi', '✨ Generate Description with AI')}
                   </span>
                 </button>
               </div>
@@ -457,7 +430,7 @@ export const PostProducePage: React.FC = () => {
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe variety, soil nourishment, dawn harvest timing, and natural aroma..."
+                placeholder={t('post.descPlaceholder', 'Describe variety, soil nourishment, dawn harvest timing, and natural aroma...')}
                 className="w-full px-4 py-3 rounded-xl bg-[#14120e] border border-[#d4af37]/30 text-sm text-[#fcfbf7] placeholder-[#66635c] focus:outline-none focus:border-[#fae69e]"
               />
 
@@ -465,11 +438,7 @@ export const PostProducePage: React.FC = () => {
                 <p className="text-[11px] font-mono text-[#34d399] mt-1 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
                   <span>
-                    {language === 'kn'
-                      ? 'AI ವಿವರಣೆ ಸೃಷ್ಟಿಯಾಗಿದೆ! ಪ್ರಕಟಿಸುವ ಮೊದಲು ಅಗತ್ಯವಿದ್ದರೆ ಸಂಪಾದಿಸಬಹುದು.'
-                      : language === 'hi'
-                      ? 'AI विवरण तैयार है! प्रकाशित करने से पहले संपादित कर सकते हैं।'
-                      : 'AI description generated! You can review or edit it before publishing.'}
+                    {t('post.aiDescSuccess', 'AI description generated! You can review or edit it before publishing.')}
                   </span>
                 </p>
               )}

@@ -23,6 +23,7 @@ import { WriteReviewModal } from './WriteReviewModal';
 import { useAuth } from '../context/AuthContext';
 import { useReviews, CustomerReview } from '../context/ReviewsContext';
 import { useProduce } from '../context/ProduceContext';
+import { getProduceImage } from '../utils/produceImages';
 import { Link } from 'react-router-dom';
 
 /* NOTE: In the next development phase, all local/mock states (listings, reviews, auth) 
@@ -547,7 +548,7 @@ export const FarmerProfileModal: React.FC<FarmerProfileModalProps> = ({
                           <div>
                             <div className="relative h-36 rounded-xl overflow-hidden mb-3 border border-[#d4af37]/20">
                               <img
-                                src={prod.images[0] || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea'}
+                                src={getProduceImage(prod)}
                                 alt={prod.name}
                                 className="w-full h-full object-cover"
                               />

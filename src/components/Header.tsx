@@ -55,7 +55,6 @@ export const Header: React.FC = () => {
     { nameKey: 'nav.farmers', path: '/farmers', icon: Tractor },
     { nameKey: 'nav.howItWorks', path: '/how-it-works', icon: HelpCircle },
     { nameKey: 'nav.impact', path: '/impact', icon: TrendingUp },
-    { nameKey: 'nav.trust', path: '/trust', icon: ShieldCheck },
   ];
 
   // Scroll position detector within the current page
@@ -144,10 +143,12 @@ export const Header: React.FC = () => {
             id="nav-logo-link"
             className="flex items-center gap-3 group select-none cursor-pointer"
           >
-            {/* Geometric Monogram Icon */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#262010] to-[#0d0d0d] border border-[#d4af37]/45 flex items-center justify-center shadow-[0_0_15px_-3px_rgba(212,175,55,0.3)] group-hover:border-[#fae69e] group-hover:scale-105 transition-all duration-300">
-              <Wheat className="w-5 h-5 text-[#fae69e]" />
-            </div>
+            {/* Official Auric Arohi Mountain Crest Logo */}
+            <img
+              src="/assets/logo/auric-arohi-logo.png"
+              alt="Auric Arohi Logo"
+              className="h-10 sm:h-12 w-auto object-contain filter drop-shadow-[0_0_12px_rgba(212,175,55,0.6)] group-hover:scale-105 transition-transform duration-300"
+            />
 
             <div className="flex flex-col">
               <span className="font-serif text-lg sm:text-xl font-bold tracking-[0.22em] text-[#fae69e] group-hover:text-[#ffffff] transition-colors leading-none uppercase drop-shadow-sm">

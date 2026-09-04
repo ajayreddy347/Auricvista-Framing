@@ -22,11 +22,13 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Order } from '../context/OrdersContext';
 import { useLanguage } from '../context/LanguageContext';
 import { FarmerProfileModal, FarmerProfileData } from '../components/FarmerProfileModal';
+import { getProduceImage } from '../utils/produceImages';
+import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 
 export const OrderConfirmedPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfileData | null>(null);
 
@@ -67,7 +69,7 @@ export const OrderConfirmedPage: React.FC = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen pt-32 pb-20 px-4 flex flex-col items-center justify-center text-center bg-[#070707] text-[#fcfbf7]">
+      <div className="min-h-screen pt-32 pb-20 px-4 flex flex-col items-center justify-center text-center bg-transparent text-[#fcfbf7]">
         <div className="w-20 h-20 rounded-3xl bg-[#14120e] border border-[#d4af37]/40 flex items-center justify-center text-[#fae69e] mb-5 shadow-[0_0_30px_rgba(212,175,55,0.2)]">
           <ShoppingBag className="w-10 h-10 text-[#d4af37]" />
         </div>
@@ -95,7 +97,7 @@ export const OrderConfirmedPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen pt-28 pb-24 px-4 sm:px-6 lg:px-8 bg-[#070707] text-[#fcfbf7] font-sans">
+    <div className="min-h-screen pt-28 pb-24 px-4 sm:px-6 lg:px-8 bg-transparent text-[#fcfbf7] font-sans">
       <div className="max-w-3xl mx-auto space-y-8">
         {/* SUCCESS ICON & HEADLINE */}
         <div className="text-center space-y-3">
@@ -204,14 +206,14 @@ export const OrderConfirmedPage: React.FC = () => {
                 >
                   <div className="flex items-center gap-3">
                     <img
-                      src={item.image}
+                      src={getProduceImage(item)}
                       alt={item.name}
                       className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
                     />
                     <div>
-                      <div className="font-serif font-bold text-sm text-[#fcfbf7]">{item.name}</div>
+                      <div className="font-serif font-bold text-sm text-[#fcfbf7]">{getLocalizedProduceName(item.name, language)}</div>
                       <div className="text-[10px] text-[#8e8b82]">
-                        {item.quantity} {item.unit} × ₹{item.price}
+                        {item.quantity} {getLocalizedUnit(item.unit, language)} × ₹{item.price}
                       </div>
                       <div
                         onClick={() => handleOpenFarmerProfile(item.farmerName, item.farmerId)}

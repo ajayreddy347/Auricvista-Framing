@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export const BulkBuying: React.FC = () => {
+  const { t } = useLanguage();
   const [modalOpen, setModalOpen] = useState(false);
 
   const audiences = [
@@ -49,7 +51,7 @@ export const BulkBuying: React.FC = () => {
   return (
     <section
       id="bulk-buying-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -75,7 +77,7 @@ export const BulkBuying: React.FC = () => {
             >
               <Scale className="w-3.5 h-3.5 text-[#d4af37]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                Direct Commercial Procurement
+                {t('bulk.eyebrow', 'Direct Commercial Procurement')}
               </span>
             </div>
           </motion.div>
@@ -86,7 +88,7 @@ export const BulkBuying: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              Need 50 KG Tomatoes?
+              {t('bulk.heading', 'Need 50 KG Tomatoes?')}
             </span>
           </motion.h2>
 
@@ -95,7 +97,7 @@ export const BulkBuying: React.FC = () => {
             id="bulk-subtext"
             className="mt-4 sm:mt-5 text-base sm:text-lg md:text-xl text-[#aba79c] font-normal leading-relaxed font-sans"
           >
-            Skip the wholesalers. Connect directly with nearby farmers for bulk orders.
+            {t('bulk.subtext', 'Skip the wholesalers. Connect directly with nearby farmers for bulk orders.')}
           </motion.p>
         </motion.div>
 

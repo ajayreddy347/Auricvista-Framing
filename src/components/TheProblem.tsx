@@ -1,3 +1,4 @@
+import { useLanguage } from '../context/LanguageContext';
 import React from 'react';
 import { motion } from 'motion/react';
 import {
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 
 export const TheProblem: React.FC = () => {
+  const { t } = useLanguage();
   // Chain nodes definition for traditional intermediary supply chain
   const chainNodes = [
     {
@@ -113,7 +115,7 @@ export const TheProblem: React.FC = () => {
   return (
     <section
       id="the-problem-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Ambient background glow */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -140,7 +142,7 @@ export const TheProblem: React.FC = () => {
             >
               <AlertCircle className="w-3.5 h-3.5 text-[#c9a227]" />
               <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#e8dfca] uppercase">
-                The Inefficiency Dilemma
+                {t('problem.eyebrow', 'The Inefficiency Dilemma')}
               </span>
             </div>
           </motion.div>
@@ -152,10 +154,10 @@ export const TheProblem: React.FC = () => {
             className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-[-0.02em] leading-[1.12] text-[#fcfbf7]"
           >
             <span className="block text-[#fcfbf7]">
-              The Farmer Grows It.
+              {t('problem.heading1', 'The Farmer Grows It.')}
             </span>
             <span className="block gold-text-metallic font-semibold tracking-[-0.015em] mt-1 sm:mt-2">
-              But Someone Else Often Profits From It.
+              {t('problem.heading2', 'But Someone Else Often Profits From It.')}
             </span>
           </motion.h2>
 

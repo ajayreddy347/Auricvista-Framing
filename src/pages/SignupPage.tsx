@@ -170,7 +170,7 @@ export const SignupPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 flex flex-col justify-between bg-[#070707] text-[#f5f3eb] font-sans">
+    <div className="min-h-screen pt-24 pb-16 flex flex-col justify-between bg-transparent text-[#f5f3eb] font-sans">
       {/* Background ambient radial gold aura */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] rounded-full gold-ambient-radial blur-3xl opacity-30" />

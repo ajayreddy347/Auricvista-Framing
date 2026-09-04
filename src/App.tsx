@@ -18,13 +18,14 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
+import { GlobalCinematicBackground } from './components/GlobalCinematicBackground';
+
 // Page Views
 import { HomePage } from './pages/HomePage';
 import { MarketplacePage } from './pages/MarketplacePage';
 import { FarmersPage } from './pages/FarmersPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { ImpactPage } from './pages/ImpactPage';
-import { TrustPage } from './pages/TrustPage';
 import { FarmerDashboardPage } from './pages/FarmerDashboardPage';
 import { CustomerDashboardPage } from './pages/CustomerDashboardPage';
 import { PostProducePage } from './pages/PostProducePage';
@@ -43,7 +44,10 @@ export default function App() {
               <OrdersProvider>
                 <Router>
                   <ScrollToTop />
-                  <div className="min-h-screen bg-[#070707] text-[#f5f3eb] flex flex-col font-sans selection:bg-[#d4af37]/30 selection:text-[#fae69e] relative">
+                  {/* GLOBAL FIXED CINEMATIC AV BACKGROUND (Always centered behind all pages and content) */}
+                  <GlobalCinematicBackground />
+
+                  <div className="min-h-screen bg-transparent text-[#f5f3eb] flex flex-col font-sans selection:bg-[#d4af37]/30 selection:text-[#fae69e] relative z-10">
                     {/* Brand Sticky Header with Role Auth State & Language Selector */}
                     <Header />
 
@@ -54,7 +58,7 @@ export default function App() {
                     <FloatingAIAssistant />
 
                     {/* Dynamic Route Pages */}
-                    <main className="flex-1 flex flex-col">
+                    <main className="flex-1 flex flex-col relative z-10">
                       <ErrorBoundary>
                         <Routes>
                           <Route path="/" element={<HomePage />} />
@@ -62,7 +66,6 @@ export default function App() {
                           <Route path="/farmers" element={<FarmersPage />} />
                           <Route path="/how-it-works" element={<HowItWorksPage />} />
                           <Route path="/impact" element={<ImpactPage />} />
-                          <Route path="/trust" element={<TrustPage />} />
 
                           {/* Farmer Protected Routes */}
                           <Route

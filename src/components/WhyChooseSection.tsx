@@ -4,13 +4,10 @@ import {
   HeartHandshake,
   Sparkles,
   Eye,
-  ShieldCheck,
-  Bot,
   Globe,
-  CheckCircle2,
-  ArrowRight,
+  Clock,
+  Wheat,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 
 export const WhyChooseSection: React.FC = () => {
@@ -25,68 +22,45 @@ export const WhyChooseSection: React.FC = () => {
   };
 
   const itemFadeUp = {
-    hidden: { opacity: 0, y: 24 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as const },
+      transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
     },
   };
 
-  const reasons = [
+  const corePillars = [
     {
       icon: HeartHandshake,
-      titleKey: 'why.reason1Title',
-      defaultTitle: 'Direct Farmer Connection',
-      descKey: 'why.reason1Desc',
-      defaultDesc: 'Buy directly from certified growers without brokers, ensuring farmers earn full value for their hard work.',
-    },
-    {
-      icon: Sparkles,
-      titleKey: 'why.reason2Title',
-      defaultTitle: 'Fresh & Traceable Produce',
-      descKey: 'why.reason2Desc',
-      defaultDesc: 'Morning dawn-harvested produce delivered quickly with full harvest origin and grower transparency.',
+      title: 'Direct Farmer Sourcing',
+      desc: 'Connect directly with certified regional growers. 100% of fair produce value reaches the farmer with zero broker markups.',
     },
     {
       icon: Eye,
-      titleKey: 'why.reason3Title',
-      defaultTitle: 'Transparent Pricing',
-      descKey: 'why.reason3Desc',
-      defaultDesc: 'Direct farm-gate rates set by farmers themselves, providing honesty for consumers and prosperity for growers.',
+      title: 'Transparent Pricing',
+      desc: 'Real farm-gate pricing set directly by growers with verified crop origin, batch harvest dates, and transparent logistics.',
     },
     {
-      icon: ShieldCheck,
-      titleKey: 'why.reason4Title',
-      defaultTitle: 'Secure Ordering & Verification',
-      descKey: 'why.reason4Desc',
-      defaultDesc: 'Reliable transaction processing with verified order tracking, live dispatch status, and authentic customer reviews.',
-    },
-    {
-      icon: Bot,
-      titleKey: 'why.reason5Title',
-      defaultTitle: 'AI Agronomy for Farmers',
-      descKey: 'why.reason5Desc',
-      defaultDesc: 'Built-in intelligent farm assistant providing crop care, organic pest remedies, and pricing guidance.',
+      icon: Clock,
+      title: 'Dawn Harvest Workflow',
+      desc: 'Crops are gathered at dawn upon order placement and dispatched fresh, eliminating days of nutrient-degrading cold storage.',
     },
     {
       icon: Globe,
-      titleKey: 'why.reason6Title',
-      defaultTitle: 'Multilingual Experience',
-      descKey: 'why.reason6Desc',
-      defaultDesc: 'Full regional Indian language and voice assistance across 13 native languages with same-language voice response.',
+      title: 'Multilingual Experience',
+      desc: 'Accessible across 13 native Indian regional languages with natural agricultural voice AI assistance.',
     },
   ];
 
   return (
     <section
       id="why-choose-auric-arohi"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#12140e] via-[#0d140e] to-[#14120c] overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[500px] rounded-full gold-ambient-radial blur-3xl opacity-30" />
-        <div className="absolute inset-0 bg-subtle-grid opacity-25 mask-gradient" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-[radial-gradient(ellipse,rgba(34,197,94,0.05)_0%,rgba(212,175,55,0.04)_50%,transparent_70%)] blur-3xl" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full">
@@ -94,68 +68,61 @@ export const WhyChooseSection: React.FC = () => {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: '-60px' }}
           variants={containerVariants}
-          className="text-center max-w-3xl mx-auto mb-16 sm:mb-20"
+          className="text-center max-w-2xl mx-auto mb-14 sm:mb-16"
         >
-          <motion.div variants={itemFadeUp} className="mb-4 inline-block">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#14120c]/90 border border-[#d4af37]/40 backdrop-blur-md shadow-[0_0_20px_-5px_rgba(212,175,55,0.25)]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#fae69e]" />
-              <span className="text-[11px] font-mono font-medium tracking-[0.2em] text-[#fae69e] uppercase">
-                {t('why.badge', 'The Auric Advantage')}
+          <motion.div variants={itemFadeUp} className="mb-3.5 inline-block">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#182417] border border-[#d4af37]/40 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-[#fae69e]" />
+              <span className="text-[11px] font-mono font-bold tracking-widest text-[#fae69e] uppercase">
+                The Auric Standard
               </span>
             </div>
           </motion.div>
 
           <motion.h2
             variants={itemFadeUp}
-            className="font-serif text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-[#fcfbf7] leading-[1.12]"
+            className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-[#fcfbf7] tracking-tight leading-[1.15]"
           >
-            <span>{t('why.title1', 'Why Choose Auric Arohi?')}</span>
+            Why Auric Arohi?
           </motion.h2>
 
           <motion.p
             variants={itemFadeUp}
-            className="mt-4 sm:mt-5 text-base sm:text-lg text-[#aba79c] font-sans leading-relaxed max-w-2xl mx-auto"
+            className="mt-3.5 text-sm sm:text-base text-[#d0cbc0] font-sans leading-relaxed"
           >
-            {t(
-              'why.subtitle',
-              'Built specifically to empower farmers and deliver unmatched organic harvest freshness to consumers.'
-            )}
+            Designed to empower Indian growers and deliver morning-harvested produce directly to families.
           </motion.p>
         </motion.div>
 
-        {/* 6 Grid Cards */}
+        {/* 4 Clean Pillars Grid */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-60px' }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          viewport={{ once: true, margin: '-50px' }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {reasons.map((r, idx) => {
-            const Icon = r.icon;
+          {corePillars.map((pillar, idx) => {
+            const Icon = pillar.icon;
             return (
               <motion.div
                 key={idx}
                 variants={itemFadeUp}
-                className="p-7 rounded-3xl bg-[#0e0d0b]/85 border border-[#d4af37]/25 hover:border-[#d4af37] backdrop-blur-xl transition-all duration-300 shadow-[0_0_25px_-8px_rgba(212,175,55,0.15)] hover:shadow-[0_0_35px_-5px_rgba(212,175,55,0.35)] hover:-translate-y-1 flex flex-col justify-between"
+                whileHover={{ y: -5 }}
+                className="p-6 rounded-2xl bg-[#141c13]/90 border border-[#d4af37]/30 hover:border-[#fae69e]/70 transition-all duration-300 shadow-md flex flex-col justify-between backdrop-blur-sm"
               >
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#1c180e] border border-[#d4af37]/40 flex items-center justify-center text-[#fae69e] mb-5 shadow-sm">
-                    <Icon className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-xl bg-[#1c281b] border border-[#d4af37]/45 flex items-center justify-center text-[#fae69e] mb-4 shadow-sm">
+                    <Icon className="w-5 h-5 text-[#fae69e]" />
                   </div>
-                  <h3 className="font-serif text-lg sm:text-xl font-bold text-[#f5f3eb] mb-2">
-                    {t(r.titleKey, r.defaultTitle)}
+                  <h3 className="font-serif font-bold text-base sm:text-lg text-[#fcfbf7] mb-2">
+                    {pillar.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-[#a39e93] leading-relaxed font-sans">
-                    {t(r.descKey, r.defaultDesc)}
+                  <p className="text-xs sm:text-sm text-[#aba79c] leading-relaxed font-sans">
+                    {pillar.desc}
                   </p>
-                </div>
-
-                <div className="pt-5 mt-5 border-t border-[#d4af37]/15 flex items-center gap-2 text-[11px] font-mono text-[#d4af37]">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#34d399]" />
-                  <span>{t('why.guarantee', 'Auric Arohi Standard')}</span>
                 </div>
               </motion.div>
             );
