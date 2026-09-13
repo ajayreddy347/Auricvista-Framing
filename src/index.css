@@ -214,68 +214,485 @@
   background: #d4af37;
 }
 
+
+
 /* ========================================================================= */
-/* GLOBAL FIXED CINEMATIC AV BACKGROUND & METALLIC SHINE EFFECT             */
+/* AURIC AVANI ORGANIC BACKGROUND ANIMATIONS                                 */
 /* ========================================================================= */
-@keyframes avMetallicShine {
+@keyframes avaniDriftLeaf {
   0% {
-    transform: translateX(-140%) translateY(-15%) rotate(22deg);
+    transform: translateY(105vh) translateX(-25px) rotate(0deg);
     opacity: 0;
   }
-  12% {
-    opacity: 0.65;
+  15% {
+    opacity: 0.4;
   }
   50% {
-    transform: translateX(0%) translateY(0%) rotate(22deg);
-    opacity: 0.85;
+    transform: translateY(50vh) translateX(30px) rotate(180deg);
+    opacity: 0.55;
   }
-  80% {
-    transform: translateX(130%) translateY(15%) rotate(22deg);
-    opacity: 0.65;
-  }
-  90% {
-    transform: translateX(150%) translateY(18%) rotate(22deg);
-    opacity: 0;
+  85% {
+    opacity: 0.3;
   }
   100% {
-    transform: translateX(-140%) translateY(-15%) rotate(22deg);
+    transform: translateY(-10vh) translateX(-20px) rotate(360deg);
     opacity: 0;
   }
 }
 
-@keyframes avAmbientGlow {
+@keyframes avaniPulseAura {
   0%, 100% {
-    opacity: 0.28;
+    opacity: 0.3;
     transform: scale(0.96);
   }
   50% {
-    opacity: 0.55;
-    transform: scale(1.03);
+    opacity: 0.65;
+    transform: scale(1.04);
   }
 }
 
-.animate-av-metallic-shine {
-  animation: avMetallicShine 13s ease-in-out infinite;
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    transparent 20%,
-    rgba(255, 235, 170, 0.05) 30%,
-    rgba(255, 245, 205, 0.25) 42%,
-    rgba(255, 255, 245, 0.55) 48%,
-    rgba(255, 255, 255, 0.72) 50%,
-    rgba(255, 255, 245, 0.55) 52%,
-    rgba(255, 245, 205, 0.25) 58%,
-    rgba(255, 235, 170, 0.05) 70%,
-    transparent 80%,
-    transparent 100%
-  );
-  mix-blend-mode: screen;
+@keyframes avaniSlowOrbit {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.animate-av-halo-breathe {
-  animation: avAmbientGlow 11s ease-in-out infinite;
+.animate-avani-drift-1 {
+  animation: avaniDriftLeaf 22s linear infinite;
 }
+
+.animate-avani-drift-2 {
+  animation: avaniDriftLeaf 28s linear infinite 4s;
+}
+
+.animate-avani-drift-3 {
+  animation: avaniDriftLeaf 34s linear infinite 10s;
+}
+
+.animate-avani-drift-4 {
+  animation: avaniDriftLeaf 26s linear infinite 7s;
+}
+
+.animate-avani-aura-pulse {
+  animation: avaniPulseAura 10s ease-in-out infinite;
+}
+
+.animate-avani-slow-spin {
+  animation: avaniSlowOrbit 75s linear infinite;
+}
+
+/* ========================================================================= */
+/* AURIC AROHI — COMPREHENSIVE LIGHT THEME DESIGN SYSTEM                    */
+/* ========================================================================= */
+
+html.light {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* Base Body Transition & Colors */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.light body {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+}
+
+/* Fixed Global Background in Light Mode */
+html.light #auric-arohi-global-fixed-bg {
+  background-color: #ffffff !important;
+}
+
+/* Micro-grid in Light Mode */
+html.light .bg-subtle-grid {
+  background-image: 
+    linear-gradient(to right, rgba(184, 134, 11, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(184, 134, 11, 0.05) 1px, transparent 1px);
+}
+
+/* Sticky Header in Light Mode */
+html.light header#auricarohi-sticky-navbar {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: #e7e4dc !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light #desktop-nav-links {
+  background-color: rgba(250, 248, 245, 0.9) !important;
+  border-color: #e7e4dc !important;
+}
+
+html.light #desktop-nav-links a {
+  color: #44403c !important;
+}
+
+html.light #desktop-nav-links a:hover {
+  color: #1c1917 !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light #desktop-nav-links a.text-\[\#fae69e\] {
+  color: #8f6208 !important;
+}
+
+/* Primary Card Backgrounds in Light Mode - Attribute matchers catch any /opacity variations */
+html.light [class*="bg-[#0e0d0"],
+html.light [class*="bg-[#12100"],
+html.light [class*="bg-[#14120"],
+html.light [class*="bg-[#18140"],
+html.light [class*="bg-[#18150"],
+html.light [class*="bg-[#1a161"],
+html.light [class*="bg-[#1c180"],
+html.light [class*="bg-[#0c0b0"],
+html.light [class*="bg-[#0f0e0"],
+html.light [class*="bg-[#241d1"],
+html.light [class*="bg-[#26201"] {
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 14px -2px rgba(40, 30, 10, 0.05) !important;
+}
+
+/* Image wrappers in Light Mode */
+html.light [class*="bg-[#16130e]"],
+html.light [class*="bg-[#201c15]"] {
+  background-color: #f4efe6 !important;
+}
+
+/* Section Gradients in Light Mode */
+html.light [class*="bg-gradient-to-b from-[#12100d]"],
+html.light [class*="bg-gradient-to-b from-[#16120b]"],
+html.light [class*="bg-gradient-to-b from-[#0c120d]"] {
+  background: linear-gradient(180deg, #ffffff 0%, #faf8f5 50%, #ffffff 100%) !important;
+}
+
+/* Typography Overrides in Light Mode */
+html.light .text-\[\#fcfbf7\],
+html.light .text-\[\#f5f3eb\],
+html.light .text-\[\#ffffff\],
+html.light .text-\[\#e8dfca\],
+html.light .text-\[\#e0dcce\],
+html.light .text-\[\#dcd7c9\],
+html.light .text-\[\#d0cbc0\] {
+  color: #1c1917 !important;
+}
+
+html.light .text-\[\#aba79c\],
+html.light .text-\[\#8e8b82\],
+html.light .text-\[\#9b978d\],
+html.light .text-\[\#7a766e\],
+html.light .text-\[\#736f66\],
+html.light .text-\[\#716e66\],
+html.light .text-\[\#6e6b63\] {
+  color: #57534e !important;
+}
+
+/* Gold Accent Text in Light Mode (High Contrast Rich Bronze Gold) */
+html.light .text-\[\#fae69e\],
+html.light .text-\[\#e6ca65\],
+html.light .text-\[\#d4af37\],
+html.light .text-\[\#c9a227\] {
+  color: #8f6208 !important;
+}
+
+/* Form Inputs, Selects & Search Bars in Light Mode */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: #e7e4dc !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #78716c !important;
+}
+
+/* Modal Panels in Light Mode */
+html.light [class*="fixed inset-0"][class*="z-50"] [class*="bg-[#0e0d0b]"],
+html.light [class*="fixed inset-0"][class*="z-50"] [class*="bg-[#12100c]"],
+html.light [class*="fixed inset-0"][class*="z-50"] [class*="bg-[#100e0a]"] {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: #e7e4dc !important;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Cart Drawer & Mobile Menu in Light Mode */
+html.light [id*="cart-drawer"],
+html.light [id*="mobile-nav-drawer"],
+html.light .bg-\[\#070707\]\/98 {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  border-color: #e7e4dc !important;
+}
+
+/* Footer in Light Mode */
+html.light footer {
+  background-color: #faf8f5 !important;
+  border-top-color: #e7e4dc !important;
+}
+
+/* Scrollbars in Light Mode */
+html.light ::-webkit-scrollbar-track {
+  background: #faf8f5;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #b8860b;
+}
+
+/* ========================================================================= */
+/* CRISP LIGHT MODE TYPOGRAPHY — Zero Dark Halos, Glows, or Muddy Shadows   */
+/* ========================================================================= */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light p,
+html.light span,
+html.light button span,
+html.light a span {
+  text-shadow: none !important;
+}
+
+html.light h1 span,
+html.light h2 span,
+html.light h3 span,
+html.light p {
+  filter: none !important;
+}
+
+/* Language Dropdown Sleek Scrollbar */
+#language-dropdown-scroll-list::-webkit-scrollbar {
+  width: 4px;
+}
+#language-dropdown-scroll-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#language-dropdown-scroll-list::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.4);
+  border-radius: 9999px;
+}
+html.light #language-dropdown-scroll-list::-webkit-scrollbar-thumb {
+  background: rgba(184, 134, 11, 0.35);
+}
+
+/* ========================================================================= */
+/* HOW AURIC AROHI WORKS SECTION — LIGHT THEME SPECIFIC OVERRIDES            */
+/* ========================================================================= */
+html.light section#how-it-works {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+html.light section#how-it-works h2,
+html.light section#how-it-works h2 span {
+  color: #1c1917 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.light section#how-it-works p {
+  color: #57534e !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.light section#how-it-works .group {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e7e4dc !important;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light section#how-it-works .group:hover {
+  border-color: #d4af37 !important;
+  box-shadow: 0 10px 25px -5px rgba(212, 175, 55, 0.15) !important;
+}
+
+html.light section#how-it-works .group h3 {
+  color: #1c1917 !important;
+  text-shadow: none !important;
+}
+
+html.light section#how-it-works .group p {
+  color: #57534e !important;
+  text-shadow: none !important;
+}
+
+/* ========================================================================= */
+/* SMART CART ROUTINES SECTION — LIGHT THEME SPECIFIC OVERRIDES              */
+/* ========================================================================= */
+html.light section#smart-cart-routine {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+html.light section#smart-cart-routine h2,
+html.light section#smart-cart-routine h3,
+html.light section#smart-cart-routine h4 {
+  color: #1c1917 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.light section#smart-cart-routine p {
+  color: #57534e !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.light section#smart-cart-routine .rounded-3xl {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e7e4dc !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06) !important;
+}
+
+html.light section#smart-cart-routine .rounded-xl {
+  background-color: #faf8f5 !important;
+  background-image: none !important;
+  border-color: #e7e4dc !important;
+}
+
+/* ========================================================================= */
+/* AURIC AVANI SISTER PLATFORM — COMPREHENSIVE LIGHT THEME DESIGN            */
+/* ========================================================================= */
+html.light #auric-avani-global-fixed-bg {
+  background-color: #ffffff !important;
+}
+
+html.light #auric-avani-global-fixed-bg div {
+  background-color: transparent !important;
+}
+
+html.light #auric-avani-global-fixed-bg .bg-\[\#050403\] {
+  background-color: #ffffff !important;
+}
+
+/* Sections on Auric Avani Page */
+html.light #auric-avani-main section {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e7e4dc !important;
+}
+
+html.light #auric-avani-main section:nth-of-type(even),
+html.light #auric-avani-main section#waste-value-calculator,
+html.light #auric-avani-main section#transformation-timeline {
+  background-color: #faf8f5 !important;
+  background-image: none !important;
+}
+
+/* Auric Avani Headings & Typography */
+html.light #auric-avani-main h1,
+html.light #auric-avani-main h2,
+html.light #auric-avani-main h3,
+html.light #auric-avani-main h4 {
+  color: #1c1917 !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+html.light #auric-avani-main p {
+  color: #57534e !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+/* All Auric Avani Card Fills, Tiles & Buttons in Light Mode */
+html.light #auric-avani-main .rounded-3xl,
+html.light #auric-avani-main .rounded-2xl,
+html.light #auric-avani-main .rounded-xl {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: #e7e4dc !important;
+  color: #1c1917 !important;
+  box-shadow: 0 4px 18px -3px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light #auric-avani-main .rounded-3xl:hover,
+html.light #auric-avani-main .rounded-2xl:hover,
+html.light #auric-avani-main .rounded-xl:hover {
+  border-color: #10b981 !important;
+}
+
+/* Selected or Active Interactive Cards */
+html.light #auric-avani-main [class*="ring-[#fae69e]"],
+html.light #auric-avani-main [class*="ring-white/30"],
+html.light #auric-avani-main [class*="scale-105"] {
+  background-color: #f0fdf4 !important;
+  border-color: #10b981 !important;
+  box-shadow: 0 6px 24px -4px rgba(16, 185, 129, 0.18) !important;
+}
+
+/* Hero Gradient Subtitle Text */
+html.light #auric-avani-main h2 span.bg-gradient-to-r {
+  background: linear-gradient(135deg, #059669 0%, #047857 50%, #8f6208 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Clean Hero Buttons */
+html.light #auric-avani-main a[href="#transformation-timeline"] {
+  background-color: #faf8f5 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* High-Contrast Light Mode Typography for Avani */
+html.light #auric-avani-main .text-\[\#fcfbf7\],
+html.light #auric-avani-main .text-\[\#f5f3eb\] {
+  color: #1c1917 !important;
+}
+
+html.light #auric-avani-main .text-\[\#c7c4b9\],
+html.light #auric-avani-main .text-\[\#d6d0c4\],
+html.light #auric-avani-main .text-\[\#b8b0a1\],
+html.light #auric-avani-main .text-\[\#aba79c\],
+html.light #auric-avani-main .text-\[\#9ca3af\] {
+  color: #57534e !important;
+}
+
+html.light #auric-avani-main .text-\[\#86efac\],
+html.light #auric-avani-main .text-\[\#6ee7b7\],
+html.light #auric-avani-main .text-\[\#a7f3d0\] {
+  color: #059669 !important;
+}
+
+html.light #auric-avani-main .text-\[\#34d399\],
+html.light #auric-avani-main .text-\[\#4ade80\] {
+  color: #047857 !important;
+}
+
+html.light #auric-avani-main .text-\[\#fae69e\],
+html.light #auric-avani-main .text-\[\#fcd34d\],
+html.light #auric-avani-main .text-\[\#d4af37\] {
+  color: #8f6208 !important;
+}
+
+/* Booking Modal in Light Mode */
+html.light [class*="fixed inset-0"][class*="z-50"] [class*="bg-[#08170e]"] {
+  background-color: #ffffff !important;
+  border-color: #e7e4dc !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.15) !important;
+}
+
+
 
 
 

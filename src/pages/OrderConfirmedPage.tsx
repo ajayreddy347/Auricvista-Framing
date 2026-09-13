@@ -24,6 +24,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { FarmerProfileModal, FarmerProfileData } from '../components/FarmerProfileModal';
 import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { ProductImage } from '../components/ProductImage';
 
 export const OrderConfirmedPage: React.FC = () => {
   const location = useLocation();
@@ -205,11 +206,15 @@ export const OrderConfirmedPage: React.FC = () => {
                   className="p-3 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 flex items-center justify-between gap-3 text-xs font-mono"
                 >
                   <div className="flex items-center gap-3">
-                    <img
-                      src={getProduceImage(item)}
-                      alt={item.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
-                    />
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-[#d4af37]/30">
+                      <ProductImage
+                        src={getProduceImage(item)}
+                        alt={item.name}
+                        productName={item.name}
+                        size="xs"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div>
                       <div className="font-serif font-bold text-sm text-[#fcfbf7]">{getLocalizedProduceName(item.name, language)}</div>
                       <div className="text-[10px] text-[#8e8b82]">

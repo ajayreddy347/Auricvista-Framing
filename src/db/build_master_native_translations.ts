@@ -538,7 +538,7 @@ const nativeFarmerTranslations: Record<string, Record<string, string>> = {
     ur: 'فصل کا اسٹاک اور قیمت تبدیل کریں',
   },
   'farmer.changePriceOrStock': {
-    en: 'Update your direct selling price and stock in real time.',
+    en: 'Update price & stock anytime.',
     kn: 'ನಿಮ್ಮ ನೇರ ಮಾರಾಟ ಬೆಲೆ ಮತ್ತು ದಾಸ್ತಾನನ್ನು ತಕ್ಷಣವೇ ಬದಲಾಯಿಸಿ.',
     hi: 'अपने सीधे विक्रय मूल्य और स्टॉक को तुरंत बदलें।',
     te: 'మీ అమ్మకపు ధర మరియు నిల్వను నేరుగా మార్చండి.',

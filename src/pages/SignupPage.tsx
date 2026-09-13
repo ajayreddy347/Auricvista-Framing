@@ -187,7 +187,7 @@ export const SignupPage: React.FC = () => {
           </div>
 
           <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-[#fcfbf7]">
-            {t('auth.signupTitle', 'Create Your Auric Arohi Account')}
+            {t('auth.signupTitle', 'Create Your AuricVista Account')}
           </h1>
           <p className="text-xs sm:text-sm text-[#aba79c] mt-2 max-w-md mx-auto">
             Direct farmer-to-consumer agricultural network. Zero middleman overhead.
@@ -212,7 +212,7 @@ export const SignupPage: React.FC = () => {
                     {t('auth.selectRole', 'Select Account Profile')}
                   </span>
                   <p className="text-xs text-[#8e8b82] mt-1">
-                    Select how you wish to register with Auric Arohi:
+                    Select how you wish to register with AuricVista:
                   </p>
                 </div>
 

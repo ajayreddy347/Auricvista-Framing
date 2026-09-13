@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 export interface FarmLocationPin {
   id: string;
@@ -114,6 +115,7 @@ export const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
   className = '',
 }) => {
   const { t } = useLanguage();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
 
   const [dbFarmers, setDbFarmers] = useState<FarmLocationPin[]>([]);
@@ -366,72 +368,177 @@ export const GoogleFarmMap: React.FC<GoogleFarmMapProps> = ({
 
   // SINGLE LOCATION MODE (For Product Detail / Farmer Profile Modals)
   if (singleLocation) {
-    const rawLoc = singleLocation.location || `${singleLocation.city}, ${singleLocation.state}`;
+    const rawLoc = singleLocation.location || `${singleLocation.city || ''}, ${singleLocation.state || ''}`;
     const safe = resolveSafeCoordinates(rawLoc);
     const destinationQuery = `${safe.city}, ${safe.state}, India`;
-    const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destinationQuery)}`;
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destinationQuery)}`;
+    const osmEmbedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${(safe.lng - 0.08).toFixed(4)}%2C${(safe.lat - 0.06).toFixed(4)}%2C${(safe.lng + 0.08).toFixed(4)}%2C${(safe.lat + 0.06).toFixed(4)}&layer=mapnik&marker=${safe.lat.toFixed(4)}%2C${safe.lng.toFixed(4)}`;
 
     return (
-      <div className={`p-4 sm:p-5 rounded-2xl bg-[#12100c] border border-[#d4af37]/35 space-y-3.5 ${className}`}>
-        <div className="flex items-center justify-between">
+      <div
+        className={`p-4 sm:p-5 rounded-2xl border space-y-3.5 ${
+          isDark
+            ? 'bg-[#12100c] border-[#d4af37]/35 text-[#fcfbf7]'
+            : 'bg-[#faf8f5] border-[#d4af37]/40 text-[#1c1917] shadow-sm'
+        } ${className}`}
+      >
+        {/* Header with Title and External Google Maps Link */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#d4af37]" />
-            <span className="text-xs font-mono uppercase text-[#fae69e] font-semibold">
+            <span
+              className={`text-xs font-mono uppercase font-semibold tracking-wider ${
+                isDark ? 'text-[#fae69e]' : 'text-[#92700c]'
+              }`}
+            >
               {t('map.farmLocation', 'Farm & District Origin')}
             </span>
           </div>
 
           <a
-            href={mapsSearchUrl}
+            href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] font-mono text-[#d4af37] hover:text-[#fae69e] hover:underline"
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono transition-all shadow-sm ${
+              isDark
+                ? 'bg-[#1c180e] hover:bg-[#282112] border-[#d4af37]/40 text-[#fae69e] hover:text-white'
+                : 'bg-white hover:bg-[#fae69e]/30 border-[#d4af37]/50 text-[#92700c] hover:text-[#1c1917]'
+            }`}
           >
             <span>{t('map.openGoogleMaps', 'Open in Google Maps')}</span>
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-3 h-3 text-[#d4af37]" />
           </a>
         </div>
 
-        {/* Visual Map Canvas Card */}
-        <div className="relative h-36 rounded-xl bg-gradient-to-br from-[#1c180e] to-[#0d0c0a] border border-[#d4af37]/20 flex flex-col items-center justify-center text-center p-3 overflow-hidden shadow-inner">
-          <div className="absolute inset-0 bg-subtle-grid opacity-30 pointer-events-none" />
+        {/* Real Live Map Embed with Location Pin */}
+        <div
+          className={`relative w-full h-48 sm:h-56 rounded-xl overflow-hidden border shadow-inner ${
+            isDark
+              ? 'border-[#d4af37]/40 bg-[#0d0c0a]'
+              : 'border-[#d4af37]/40 bg-[#f4efe6]'
+          }`}
+        >
+          <iframe
+            title={`Farm Origin Map - ${safe.city}, ${safe.state}`}
+            src={osmEmbedUrl}
+            className={`w-full h-full border-0 ${
+              isDark
+                ? 'filter contrast-[1.05] brightness-[0.85] invert-[0.85] hue-rotate-180'
+                : 'filter contrast-[1.02]'
+            }`}
+            loading="lazy"
+          />
 
-          <div className="relative z-10 space-y-1.5">
-            <div className="w-9 h-9 rounded-full bg-[#d4af37]/20 border border-[#d4af37] flex items-center justify-center text-[#fae69e] mx-auto shadow-[0_0_15px_rgba(212,175,55,0.4)]">
-              <MapPin className="w-5 h-5 text-[#d4af37]" />
-            </div>
-            <div className="font-serif font-bold text-base text-[#fcfbf7]">
-              {safe.city}, {safe.state}
-            </div>
-            <div className="text-[11px] font-mono text-[#aba79c]">
-              Verified Agricultural District • India
-            </div>
+          {/* District Origin Floating Marker */}
+          <div
+            className={`absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg border text-[11px] font-mono shadow-md flex items-center gap-2 pointer-events-none ${
+              isDark
+                ? 'bg-black/85 backdrop-blur-md border-[#d4af37]/70 text-[#fae69e]'
+                : 'bg-white/95 backdrop-blur-md border-[#d4af37]/60 text-[#1c1917]'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-bold">{safe.city}, {safe.state}</span>
+          </div>
+
+          {/* Map Verification Notice */}
+          <div
+            className={`absolute bottom-2 right-2 px-2 py-0.5 rounded border text-[9px] font-mono pointer-events-none ${
+              isDark
+                ? 'bg-black/80 backdrop-blur-sm border-[#d4af37]/40 text-[#dcd7c9]'
+                : 'bg-white/90 backdrop-blur-sm border-[#d4af37]/40 text-stone-700'
+            }`}
+          >
+            Live GPS District Map
           </div>
         </div>
 
-        {/* Action Button: Live GPS Directions */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!('geolocation' in navigator)) {
-              window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`, '_blank');
-              return;
-            }
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`;
-                window.open(url, '_blank');
-              },
-              () => {
-                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`, '_blank');
-              }
-            );
-          }}
-          className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#221c10] to-[#14120e] hover:bg-[#2c2414] border border-[#d4af37]/40 text-xs font-mono font-bold text-[#fae69e] flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-95"
+        {/* District & GPS Coordinates Verification Meta */}
+        <div
+          className={`p-3 rounded-xl border flex items-center justify-between flex-wrap gap-2 text-xs font-mono ${
+            isDark
+              ? 'bg-[#16130d] border-[#d4af37]/25 text-[#fcfbf7]'
+              : 'bg-white border-[#d4af37]/35 text-[#1c1917] shadow-sm'
+          }`}
         >
-          <Navigation className="w-3.5 h-3.5 text-[#d4af37]" />
-          <span>{t('map.getDirections', 'Get Directions from Current Location')}</span>
-        </button>
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-7 h-7 rounded-lg border flex items-center justify-center ${
+                isDark
+                  ? 'bg-[#221b0e] border-[#d4af37]/40 text-[#d4af37]'
+                  : 'bg-[#faf8f5] border-[#d4af37]/40 text-[#b89120]'
+              }`}
+            >
+              <LocateFixed className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <span className={`text-[10px] uppercase block ${isDark ? 'text-[#8e8b82]' : 'text-stone-500'}`}>
+                Approx. GPS Coordinates
+              </span>
+              <span className={`font-semibold ${isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'}`}>
+                {safe.lat.toFixed(4)}° N, {safe.lng.toFixed(4)}° E
+              </span>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span className={`text-[10px] uppercase block ${isDark ? 'text-[#8e8b82]' : 'text-stone-500'}`}>
+              Agricultural Zone
+            </span>
+            <span
+              className={`font-semibold flex items-center justify-end gap-1 ${
+                isDark ? 'text-[#34d399]' : 'text-emerald-700'
+              }`}
+            >
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              {safe.city} District, {safe.state}
+            </span>
+          </div>
+        </div>
+
+        {/* Live GPS Directions / Google Maps Links */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`py-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all ${
+              isDark
+                ? 'bg-gradient-to-r from-[#221c10] to-[#14120e] hover:bg-[#2c2414] border-[#d4af37]/40 text-[#fae69e] hover:text-white'
+                : 'bg-white hover:bg-[#fae69e]/30 border-[#d4af37]/50 text-[#92700c] hover:text-[#1c1917]'
+            }`}
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-[#d4af37]" />
+            <span>Verify in Google Maps</span>
+          </a>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!('geolocation' in navigator)) {
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`, '_blank');
+                return;
+              }
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const url = `https://www.google.com/maps/dir/?api=1&origin=${pos.coords.latitude},${pos.coords.longitude}&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`;
+                  window.open(url, '_blank');
+                },
+                () => {
+                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationQuery)}&travelmode=driving`, '_blank');
+                }
+              );
+            }}
+            className={`py-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all ${
+              isDark
+                ? 'bg-gradient-to-r from-[#1b170e] to-[#12100a] hover:bg-[#241e12] border-[#d4af37]/30 text-[#dcd7c9] hover:text-[#fae69e]'
+                : 'bg-white hover:bg-stone-50 border-stone-300 text-stone-700 hover:text-stone-900'
+            }`}
+          >
+            <Navigation className="w-3.5 h-3.5 text-[#d4af37]" />
+            <span>{t('map.getDirections', 'Get Directions')}</span>
+          </button>
+        </div>
       </div>
     );
   }

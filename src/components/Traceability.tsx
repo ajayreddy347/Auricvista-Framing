@@ -7,8 +7,6 @@ import {
   Package,
   Truck,
   Home,
-  Sparkles,
-  ArrowRight,
   ShieldCheck,
   CheckCircle2,
 } from 'lucide-react';
@@ -95,15 +93,9 @@ export const Traceability: React.FC = () => {
 
   return (
     <section
-      id="traceability-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
+      id="traceability"
+      className="relative py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden"
     >
-      {/* Ambient background gold glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[450px] rounded-full gold-ambient-radial blur-3xl opacity-35" />
-        <div className="absolute inset-0 bg-subtle-grid opacity-30 mask-gradient" />
-      </div>
-
       <div className="relative z-10 max-w-7xl mx-auto w-full">
         {/* ========================================================================= */}
         {/* SECTION HEADER & TITLE */}
@@ -162,7 +154,7 @@ export const Traceability: React.FC = () => {
             <div className="hidden lg:block absolute top-[92px] left-16 right-16 h-[2px] animated-signal-line rounded-full z-0 opacity-70" />
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-4 relative z-10">
-              {steps.map((step, idx) => {
+              {steps.map((step) => {
                 const IconComp = step.icon;
 
                 return (

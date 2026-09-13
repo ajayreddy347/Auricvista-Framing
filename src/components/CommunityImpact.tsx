@@ -108,6 +108,7 @@ const CountUpTile: React.FC<StatItemProps> = ({
 
 export const CommunityImpact: React.FC = () => {
   const { t } = useLanguage();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -133,7 +134,7 @@ export const CommunityImpact: React.FC = () => {
   return (
     <section
       id="community-impact-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
+      className="relative pt-8 sm:pt-12 pb-20 sm:pb-24 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -142,9 +143,6 @@ export const CommunityImpact: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full">
-        {/* ========================================================================= */}
-        {/* SECTION HEADER & TITLE */}
-        {/* ========================================================================= */}
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -183,9 +181,7 @@ export const CommunityImpact: React.FC = () => {
           </motion.p>
         </motion.div>
 
-        {/* ========================================================================= */}
-        {/* 4 LARGE STAT TILES (Row on Desktop, 2x2 on Mobile/Tablet)                 */}
-        {/* ========================================================================= */}
+        {/* 4 LARGE STAT TILES */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -193,7 +189,6 @@ export const CommunityImpact: React.FC = () => {
           viewport={{ once: true, margin: '-60px' }}
           className="mt-16 sm:mt-20 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7"
         >
-          {/* Tile 1: 1,250+ Farmers Connected */}
           <CountUpTile
             finalNumber={1250}
             suffix="+"
@@ -202,7 +197,6 @@ export const CommunityImpact: React.FC = () => {
             icon={Users}
           />
 
-          {/* Tile 2: 18,500+ KG Produce Sold Directly */}
           <CountUpTile
             finalNumber={18500}
             suffix="+ KG"
@@ -211,7 +205,6 @@ export const CommunityImpact: React.FC = () => {
             icon={Scale}
           />
 
-          {/* Tile 3: ₹12L+ Value Reached Farmers */}
           <CountUpTile
             finalNumber={12}
             prefix="₹"
@@ -221,7 +214,6 @@ export const CommunityImpact: React.FC = () => {
             icon={Coins}
           />
 
-          {/* Tile 4: 32,000+ Orders Completed */}
           <CountUpTile
             finalNumber={32000}
             suffix="+"

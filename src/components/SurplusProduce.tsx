@@ -67,7 +67,7 @@ export const SurplusProduce: React.FC = () => {
   return (
     <section
       id="surplus-produce-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
+      className="relative py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 backdrop-blur-[2px] overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">
@@ -118,7 +118,7 @@ export const SurplusProduce: React.FC = () => {
         </motion.div>
 
         {/* ========================================================================= */}
-        {/* THREE GOLD-OUTLINED CARDS (Minimal, Minimalist Text & Icons)              */}
+        {/* THREE GOLD-OUTLINED CARDS */}
         {/* ========================================================================= */}
         <motion.div
           variants={containerVariants}
@@ -155,7 +155,7 @@ export const SurplusProduce: React.FC = () => {
         </motion.div>
 
         {/* ========================================================================= */}
-        {/* SMALL CONNECTING ECOSYSTEM LINE                                          */}
+        {/* SMALL CONNECTING ECOSYSTEM LINE */}
         {/* ========================================================================= */}
         <motion.div
           variants={itemFadeUp}

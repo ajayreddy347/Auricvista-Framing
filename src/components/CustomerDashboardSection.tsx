@@ -25,24 +25,29 @@ import {
   SlidersHorizontal,
   ChevronRight,
   AlertCircle,
+  Plus,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useOrders, Order, OrderStatus } from '../context/OrdersContext';
 import { useCart } from '../context/CartContext';
+import { useProduce } from '../context/ProduceContext';
 import { useLanguage } from '../context/LanguageContext';
 import { WriteReviewModal } from './WriteReviewModal';
 import { FarmerProfileModal, FarmerProfileData } from './FarmerProfileModal';
 import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { ProductImage } from './ProductImage';
 
 export const CustomerDashboardSection: React.FC = () => {
   const { isLoggedIn, userRole, user } = useAuth();
   const { orders, isLoading } = useOrders();
-  const { addToCart, openCart } = useCart();
+  const { items: cartItems, subtotal, addToCart, removeFromCart, updateQuantity, openCart } = useCart();
+  const { listings } = useProduce();
   const { language, t } = useLanguage();
   const navigate = useNavigate();
 
+  const [activeSection, setActiveSection] = useState<'orders' | 'cart' | 'recommendations'>('orders');
   const [selectedTab, setSelectedTab] = useState<'all' | 'active' | 'delivered' | 'cancelled'>('all');
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
   const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfileData | null>(null);
@@ -119,7 +124,7 @@ export const CustomerDashboardSection: React.FC = () => {
   return (
     <section
       id="customer-dashboard-section"
-      className="relative py-24 px-4 sm:px-6 lg:px-8 bg-transparent text-[#fcfbf7] min-h-screen border-t border-[#d4af37]/15"
+      className="relative pt-6 sm:pt-8 pb-20 px-4 sm:px-6 lg:px-8 bg-transparent text-[#fcfbf7] min-h-screen"
     >
       <div className="max-w-7xl mx-auto space-y-8">
         {/* 1. CUSTOMER WELCOME HEADER */}
@@ -205,35 +210,79 @@ export const CustomerDashboardSection: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. ORDER FILTER TABS */}
-        <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-[#d4af37]/20">
-          <div>
-            <h2 className="font-serif text-2xl font-bold text-[#fcfbf7]">{t('dash.myOrdersTitle', 'My Orders')}</h2>
-            <p className="text-xs text-[#8e8b82]">{t('dash.myOrdersSub', 'Track real-time direct farm harvests and order delivery milestones.')}</p>
-          </div>
+        {/* 2.5 SECTION SELECTOR (ORDERS, CART, RECOMMENDATIONS) */}
+        <div className="flex items-center gap-2 border-b border-[#d4af37]/25 pb-3 overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setActiveSection('orders')}
+            className={`px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeSection === 'orders'
+                ? 'bg-[#221c0e] text-[#fae69e] border border-[#d4af37] shadow-sm'
+                : 'text-[#aba79c] hover:text-[#fcfbf7] hover:bg-white/5'
+            }`}
+          >
+            <Package className="w-4 h-4 text-[#d4af37]" />
+            <span>My Orders ({orders.length})</span>
+          </button>
 
-          <div className="p-1 rounded-2xl bg-[#14120e] border border-[#d4af37]/30 inline-flex font-mono text-xs overflow-x-auto no-scrollbar">
-            {[
-              { id: 'all', label: t('market.allCategories', 'All Orders') },
-              { id: 'active', label: t('dash.activeDispatches', 'Active') },
-              { id: 'delivered', label: t('dash.delivered', 'Delivered') },
-              { id: 'cancelled', label: t('order.cancelled', 'Cancelled') },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedTab(tab.id as any)}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                  selectedTab === tab.id
-                    ? 'bg-gradient-to-r from-[#241c0e] to-[#16130c] text-[#fae69e] border border-[#d4af37]/60 font-bold shadow-sm'
-                    : 'text-[#8e8b82] hover:text-[#f5f3eb]'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => setActiveSection('cart')}
+            className={`px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeSection === 'cart'
+                ? 'bg-[#221c0e] text-[#fae69e] border border-[#d4af37] shadow-sm'
+                : 'text-[#aba79c] hover:text-[#fcfbf7] hover:bg-white/5'
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4 text-[#d4af37]" />
+            <span>Harvest Cart ({cartItems.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('recommendations')}
+            className={`px-4 py-2 rounded-xl font-serif text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+              activeSection === 'recommendations'
+                ? 'bg-[#221c0e] text-[#fae69e] border border-[#d4af37] shadow-sm'
+                : 'text-[#aba79c] hover:text-[#fcfbf7] hover:bg-white/5'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-[#d4af37]" />
+            <span>Fresh Recommendations</span>
+          </button>
         </div>
+
+        {/* 3. ORDERS SECTION */}
+        {activeSection === 'orders' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-[#d4af37]/20">
+              <div>
+                <h2 className="font-serif text-2xl font-bold text-[#fcfbf7]">{t('dash.myOrdersTitle', 'My Orders')}</h2>
+                <p className="text-xs text-[#8e8b82]">{t('dash.myOrdersSub', 'Track real-time direct farm harvests and order delivery milestones.')}</p>
+              </div>
+
+              <div className="p-1 rounded-2xl bg-[#14120e] border border-[#d4af37]/30 inline-flex font-mono text-xs overflow-x-auto no-scrollbar">
+                {[
+                  { id: 'all', label: t('market.allCategories', 'All Orders') },
+                  { id: 'active', label: t('dash.activeDispatches', 'Active') },
+                  { id: 'delivered', label: t('dash.delivered', 'Delivered') },
+                  { id: 'cancelled', label: t('order.cancelled', 'Cancelled') },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setSelectedTab(tab.id as any)}
+                    className={`px-4 py-2 rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                      selectedTab === tab.id
+                        ? 'bg-gradient-to-r from-[#241c0e] to-[#16130c] text-[#fae69e] border border-[#d4af37]/60 font-bold shadow-sm'
+                        : 'text-[#8e8b82] hover:text-[#f5f3eb]'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
         {/* 4. ORDERS LISTING (CARDS WITH STATUS TIMELINE) */}
         {isLoading ? (
@@ -364,12 +413,15 @@ export const CustomerDashboardSection: React.FC = () => {
                           className="p-3.5 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-3">
-                            <img
-                              src={getProduceImage(item)}
-                              alt={item.name}
-                              className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
-                              loading="lazy"
-                            />
+                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-[#d4af37]/30 shrink-0">
+                              <ProductImage
+                                src={getProduceImage(item)}
+                                alt={item.name}
+                                productName={item.name}
+                                size="xs"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                             <div>
                               <h4 className="font-serif font-bold text-sm text-[#f5f3eb]">{getLocalizedProduceName(item.name, language)}</h4>
                               <div className="text-[11px] font-mono text-[#8e8b82]">
@@ -472,8 +524,192 @@ export const CustomerDashboardSection: React.FC = () => {
           </div>
         )}
       </div>
+      )}
 
-      {/* 6. ORDER DETAILS MODAL */}
+      {/* 4. CART OVERVIEW TAB */}
+      {activeSection === 'cart' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-2 border-b border-[#d4af37]/20">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-[#fcfbf7]">Your Harvest Cart</h2>
+              <p className="text-xs text-[#8e8b82]">Review selected farm produce and finalize your direct order.</p>
+            </div>
+            <span className="text-xs font-mono text-[#fae69e] bg-[#1a150e] px-3 py-1.5 rounded-xl border border-[#d4af37]/30">
+              {cartItems.length} items selected
+            </span>
+          </div>
+
+          {cartItems.length === 0 ? (
+            <div className="p-12 rounded-3xl bg-[#12100c] border border-[#d4af37]/30 text-center space-y-4 max-w-md mx-auto shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-[#1c180e] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] mx-auto">
+                <ShoppingBag className="w-7 h-7 text-[#d4af37]" />
+              </div>
+              <h3 className="font-serif text-xl font-bold text-[#fcfbf7]">Your Cart is Empty</h3>
+              <p className="text-xs text-[#aba79c] leading-relaxed">
+                Explore our marketplace to discover dawn-harvested produce directly from verified growers.
+              </p>
+              <Link
+                to="/marketplace"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-md"
+              >
+                <span>Explore Marketplace</span>
+                <ArrowRight className="w-4 h-4 text-[#0a0a0a]" />
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-8 space-y-3">
+                {cartItems.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="p-4 rounded-2xl bg-[#12100c] border border-[#d4af37]/25 flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#18150e] shrink-0">
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-serif font-bold text-sm text-[#fcfbf7] truncate">{item.name}</h4>
+                        <p className="text-xs font-mono text-[#aba79c]">👨🌾 {item.farmerName}</p>
+                        <p className="text-xs font-mono font-bold text-[#fae69e]">₹{item.price}/{item.unit}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="flex items-center gap-2 bg-[#1c180e] px-2 py-1 rounded-xl border border-[#d4af37]/30">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          className="w-6 h-6 rounded flex items-center justify-center text-[#d4af37] hover:bg-white/10 font-bold"
+                        >
+                          -
+                        </button>
+                        <span className="font-mono text-xs font-bold text-[#fcfbf7] w-4 text-center">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          className="w-6 h-6 rounded flex items-center justify-center text-[#d4af37] hover:bg-white/10 font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      <span className="font-serif font-bold text-sm text-[#fae69e] w-16 text-right">
+                        ₹{item.price * item.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.productId)}
+                        className="text-[#8e8b82] hover:text-[#f87171] p-1 cursor-pointer"
+                        title="Remove item"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Order Summary Sidebar */}
+              <div className="lg:col-span-4">
+                <div className="p-6 rounded-2xl bg-[#12100c] border border-[#d4af37]/35 space-y-4 sticky top-28">
+                  <h3 className="font-serif text-lg font-bold text-[#fcfbf7] pb-2 border-b border-[#d4af37]/20">
+                    Cart Total
+                  </h3>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="flex justify-between text-[#aba79c]">
+                      <span>Items Subtotal:</span>
+                      <span className="text-[#fcfbf7] font-bold">₹{subtotal}</span>
+                    </div>
+                    <div className="flex justify-between text-[#aba79c]">
+                      <span>Direct Farm Logistics:</span>
+                      <span className="text-[#34d399] font-bold">{subtotal >= 500 ? 'FREE' : '₹40'}</span>
+                    </div>
+                    <div className="pt-2 border-t border-[#d4af37]/20 flex justify-between text-base font-bold text-[#fae69e]">
+                      <span>Estimated Total:</span>
+                      <span>₹{subtotal + (subtotal >= 500 ? 0 : 40)}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/checkout')}
+                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <span>Proceed to Direct Checkout</span>
+                    <ArrowRight className="w-4 h-4 text-[#0a0a0a]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. RECOMMENDATIONS TAB */}
+      {activeSection === 'recommendations' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between pb-2 border-b border-[#d4af37]/20">
+            <div>
+              <h2 className="font-serif text-2xl font-bold text-[#fcfbf7]">Recommended Farm Harvests</h2>
+              <p className="text-xs text-[#8e8b82]">Handpicked seasonal crops currently in stock from certified regional growers.</p>
+            </div>
+            <Link
+              to="/marketplace"
+              className="text-xs font-mono text-[#fae69e] hover:underline flex items-center gap-1"
+            >
+              <span>View All 81 Crops</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {listings
+              .filter((p) => p.status === 'Active' && p.quantity > 0)
+              .slice(0, 8)
+              .map((produce) => (
+                <div
+                  key={produce.id}
+                  className="p-3.5 rounded-2xl bg-[#12100c] border border-[#d4af37]/25 hover:border-[#fae69e] transition-all flex flex-col justify-between space-y-3 group"
+                >
+                  <div className="aspect-square rounded-xl overflow-hidden bg-[#18150e]">
+                    <img
+                      src={getProduceImage(produce)}
+                      alt={produce.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-bold text-xs sm:text-sm text-[#fcfbf7] truncate">{produce.name}</h4>
+                    <p className="text-[10px] font-mono text-[#8e8b82] truncate mt-0.5">👨🌾 {produce.farmerName}</p>
+                    <p className="text-xs font-serif font-bold text-[#fae69e] mt-1">₹{produce.pricePerUnit}/{produce.unit}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToCart({
+                        productId: produce.id,
+                        name: produce.name,
+                        image: getProduceImage(produce),
+                        price: produce.pricePerUnit,
+                        unit: produce.unit,
+                        farmerName: produce.farmerName,
+                        maxAvailable: produce.quantity,
+                      }, 1);
+                      openCart();
+                    }}
+                    className="w-full py-2 rounded-lg bg-[#1e1910] hover:bg-[#282014] border border-[#d4af37]/40 text-[10px] font-serif font-bold text-[#fae69e] uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-[#d4af37]" />
+                    <span>Add to Cart</span>
+                  </button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
       <AnimatePresence>
         {selectedOrderDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">

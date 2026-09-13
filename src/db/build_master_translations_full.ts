@@ -54,7 +54,7 @@ const newFarmerKeys: Record<string, string> = {
   'farmer.availableQuantity': 'Available Quantity',
   'farmer.availableToSell': 'Available to sell',
   'farmer.editProduceTitle': 'Edit Produce Stock & Price',
-  'farmer.changePriceOrStock': 'Update your direct selling price and stock in real time.',
+  'farmer.changePriceOrStock': 'Update price & stock anytime.',
   'farmer.noOrdersYet': 'No Incoming Orders',
   'farmer.noOrdersSub': 'New customer orders for your harvest will appear here for preparation and delivery.',
   'farmer.orderNum': 'Order #',

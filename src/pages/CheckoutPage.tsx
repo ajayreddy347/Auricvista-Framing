@@ -29,6 +29,7 @@ import { useOrders } from '../context/OrdersContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { ProductImage } from '../components/ProductImage';
 
 export const CheckoutPage: React.FC = () => {
   const { items, subtotal, clearCart, removeFromCart, updateQuantity } = useCart();
@@ -197,7 +198,7 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-28 px-4 sm:px-6 lg:px-8 bg-[#070707] text-[#fcfbf7] font-sans">
+    <div className="min-h-screen pt-4 sm:pt-6 pb-24 px-4 sm:px-6 lg:px-8 bg-transparent text-[#fcfbf7] font-sans">
       <div className="max-w-7xl mx-auto">
         {/* A. CHECKOUT HEADER */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#d4af37]/20">
@@ -475,11 +476,16 @@ export const CheckoutPage: React.FC = () => {
                     key={item.productId}
                     className="p-3 rounded-2xl bg-[#14120e] border border-[#d4af37]/20 flex items-center justify-between gap-3"
                   >
-                    <img
-                      src={getProduceImage(item)}
-                      alt={item.name}
-                      className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
-                    />
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-[#d4af37]/30">
+                      <ProductImage
+                        src={getProduceImage(item)}
+                        alt={item.name}
+                        productName={item.name}
+                        category={item.category}
+                        size="xs"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <h4 className="font-serif font-bold text-xs sm:text-sm text-[#fcfbf7] truncate">

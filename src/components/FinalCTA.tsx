@@ -4,10 +4,12 @@ import { ArrowRight, Sparkles, Tractor, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 export const FinalCTA: React.FC = () => {
   const { isLoggedIn, userRole } = useAuth();
   const { t } = useLanguage();
+  const { isDark } = useTheme();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -29,15 +31,25 @@ export const FinalCTA: React.FC = () => {
   return (
     <section
       id="final-cta-section"
-      className="relative py-28 sm:py-36 px-4 sm:px-6 lg:px-8 border-t border-[#d4af37]/25 bg-transparent overflow-hidden"
+      className="relative py-20 sm:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 border-t border-[#d4af37]/25 bg-transparent overflow-hidden"
     >
       {/* Subtle atmospheric warm aura */}
       <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
-        {/* Center text backdrop aura */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(10,9,7,0.6)_0%,rgba(10,9,7,0.3)_50%,transparent_80%)]" />
-
-        {/* Sunset warm glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[radial-gradient(circle,rgba(245,158,11,0.15)_0%,rgba(212,175,55,0.05)_50%,transparent_80%)] blur-3xl pointer-events-none" />
+        {isDark ? (
+          <>
+            {/* Center text backdrop aura */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(10,9,7,0.6)_0%,rgba(10,9,7,0.3)_50%,transparent_80%)]" />
+            {/* Sunset warm glow */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[radial-gradient(circle,rgba(245,158,11,0.15)_0%,rgba(212,175,55,0.05)_50%,transparent_80%)] blur-3xl pointer-events-none" />
+          </>
+        ) : (
+          <>
+            {/* Light mode sunset aura */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,241,232,0.85)_0%,rgba(249,247,242,0.5)_50%,transparent_80%)]" />
+            {/* Warm light sunburst */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-[radial-gradient(circle,rgba(212,175,55,0.14)_0%,rgba(245,158,11,0.04)_50%,transparent_80%)] blur-3xl pointer-events-none" />
+          </>
+        )}
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto w-full text-center">
@@ -62,12 +74,24 @@ export const FinalCTA: React.FC = () => {
           <motion.h2
             variants={itemFadeUp}
             id="final-heading"
-            className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.15] text-[#fcfbf7]"
+            className={`font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.15] ${
+              isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'
+            }`}
           >
-            <span className="block drop-shadow-[0_3px_15px_rgba(0,0,0,0.95)]">
+            <span
+              className={`block ${
+                isDark ? 'drop-shadow-[0_3px_15px_rgba(0,0,0,0.95)]' : ''
+              }`}
+            >
               {t('cta.title1', 'Grow With Auric Arohi.')}
             </span>
-            <span className="block bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#e6ca65] bg-clip-text text-transparent mt-1 sm:mt-2 drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+            <span
+              className={`block bg-clip-text text-transparent mt-1 sm:mt-2 ${
+                isDark
+                  ? 'bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#e6ca65] drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]'
+                  : 'bg-gradient-to-r from-[#8f6208] via-[#b8860b] to-[#78590c]'
+              }`}
+            >
               {t('cta.title2', 'Fresh Harvests. Direct Value.')}
             </span>
           </motion.h2>
@@ -75,7 +99,11 @@ export const FinalCTA: React.FC = () => {
           {/* Subtext */}
           <motion.p
             variants={itemFadeUp}
-            className="mt-5 text-sm sm:text-base md:text-lg text-[#e0dcce] font-normal max-w-xl mx-auto leading-relaxed font-sans drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+            className={`mt-5 text-sm sm:text-base md:text-lg font-normal max-w-xl mx-auto leading-relaxed font-sans ${
+              isDark
+                ? 'text-[#e0dcce] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]'
+                : 'text-[#44403c]'
+            }`}
           >
             {t(
               'cta.subtitle',

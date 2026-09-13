@@ -22,6 +22,7 @@ import { useProduce, ProduceListing } from '../context/ProduceContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getProduceImage } from '../utils/produceImages';
+import { ProductImage } from './ProductImage';
 
 export interface SmartRoutineItem {
   productId: string;
@@ -487,12 +488,16 @@ export const SmartCartBuilderModal: React.FC<SmartCartBuilderModalProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            src={getProduceImage(produce)}
-                            alt={produce.name}
-                            className="w-14 h-14 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
-                            loading="lazy"
-                          />
+                          <div className="w-14 h-14 rounded-xl overflow-hidden border border-[#d4af37]/30 shrink-0">
+                            <ProductImage
+                              src={getProduceImage(produce)}
+                              alt={produce.name}
+                              productName={produce.name}
+                              category={produce.category}
+                              size="xs"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                           <div className="min-w-0">
                             <h4 className="font-serif font-bold text-xs sm:text-sm text-[#fcfbf7] truncate">
                               {produce.name}
@@ -604,11 +609,16 @@ export const SmartCartBuilderModal: React.FC<SmartCartBuilderModalProps> = ({
                           className="p-3 rounded-xl bg-[#0e0d0b] border border-[#d4af37]/20 flex items-center justify-between gap-3 text-xs font-mono"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <img
-                              src={getProduceImage({ name: item.name, category: item.category })}
-                              alt={item.name}
-                              className="w-10 h-10 rounded-lg object-cover border border-[#d4af37]/30 shrink-0"
-                            />
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-[#d4af37]/30 shrink-0">
+                              <ProductImage
+                                src={getProduceImage({ name: item.name, category: item.category })}
+                                alt={item.name}
+                                productName={item.name}
+                                category={item.category}
+                                size="xs"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                             <div className="min-w-0">
                               <div className="font-serif font-bold text-sm text-[#fcfbf7] truncate">
                                 {item.name}
@@ -655,11 +665,16 @@ export const SmartCartBuilderModal: React.FC<SmartCartBuilderModalProps> = ({
                           className="p-3.5 rounded-2xl bg-[#14120e] border border-[#d4af37]/30 flex items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <img
-                              src={getProduceImage(rec.produce)}
-                              alt={rec.produce.name}
-                              className="w-12 h-12 rounded-xl object-cover border border-[#d4af37]/30 shrink-0"
-                            />
+                            <div className="w-12 h-12 rounded-xl overflow-hidden border border-[#d4af37]/30 shrink-0">
+                              <ProductImage
+                                src={getProduceImage(rec.produce)}
+                                alt={rec.produce.name}
+                                productName={rec.produce.name}
+                                category={rec.produce.category}
+                                size="xs"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                             <div className="min-w-0">
                               <span className="text-[9px] font-mono text-[#34d399] font-bold block">
                                 {rec.badge}

@@ -56,7 +56,7 @@ export const WhyChooseSection: React.FC = () => {
   return (
     <section
       id="why-choose-auric-arohi"
-      className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#12140e] via-[#0d140e] to-[#14120c] overflow-hidden"
+      className="relative py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#12140e] via-[#0d140e] to-[#14120c] overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">

@@ -25,6 +25,8 @@ import {
   Star,
   Layers,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   ShieldCheck,
   Search,
@@ -41,6 +43,8 @@ import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleFarmMap } from './GoogleFarmMap';
+import { ProductImage } from './ProductImage';
+import { StarRating } from './StarRating';
 
 export const FarmerDashboardSection: React.FC = () => {
   const { user } = useAuth();
@@ -52,10 +56,13 @@ export const FarmerDashboardSection: React.FC = () => {
 
   const isRtl = language === 'ur';
 
-  // Active view tab
+  // Active view tab: crops | orders | reviews | location
   const [activeDashboardTab, setActiveDashboardTab] = useState<
-    'inventory' | 'orders' | 'reviews' | 'location'
-  >('inventory');
+    'crops' | 'orders' | 'reviews' | 'location'
+  >('crops');
+
+  // Produce expand/collapse state (limit to 6 initially)
+  const [isProduceExpanded, setIsProduceExpanded] = useState(false);
 
   // Search and status filters for inventory
   const [inventorySearch, setInventorySearch] = useState('');
@@ -68,6 +75,7 @@ export const FarmerDashboardSection: React.FC = () => {
   const [editPrice, setEditPrice] = useState<string>('');
   const [editQuantity, setEditQuantity] = useState<string>('');
   const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Farmer AI Problem Assistant State
   const [farmerVoiceText, setFarmerVoiceText] = useState('');
@@ -88,12 +96,13 @@ export const FarmerDashboardSection: React.FC = () => {
 
   // Real Produce Listings for this Farmer
   const farmerListings = useMemo(() => {
-    return listings.filter(
-      (item) =>
-        item.farmerEmail === user?.email ||
-        item.farmerName?.toLowerCase() === user?.name?.toLowerCase() ||
-        (user?.role === 'farmer' && listings.length > 0)
-    );
+    return listings.filter((item) => {
+      const emailMatch = user?.email && item.farmerEmail?.toLowerCase() === user.email.toLowerCase();
+      const nameMatch = user?.name && item.farmerName?.toLowerCase() === user.name.toLowerCase();
+      const idMatch = user?.id && item.farmerId === user.id;
+      const farmerIdMatch = user?.farmerId && item.farmerId === user.farmerId;
+      return Boolean(emailMatch || nameMatch || idMatch || farmerIdMatch);
+    });
   }, [listings, user]);
 
   // Real Orders matching this farmer's produce
@@ -346,10 +355,17 @@ export const FarmerDashboardSection: React.FC = () => {
     });
   }, [farmerListings, inventorySearch, inventoryFilter, language]);
 
+  // 6-item pagination limit for My Crops & Produce (3 columns x 2 rows on desktop)
+  const INITIAL_PRODUCE_LIMIT = 6;
+  const visibleProduce = useMemo(() => {
+    return isProduceExpanded ? filteredInventory : filteredInventory.slice(0, INITIAL_PRODUCE_LIMIT);
+  }, [isProduceExpanded, filteredInventory]);
+  const hasMoreProduce = filteredInventory.length > INITIAL_PRODUCE_LIMIT;
+
   return (
     <div
       dir={isRtl ? 'rtl' : 'ltr'}
-      className={`w-full bg-transparent text-[#fcfbf7] min-h-screen pb-28 pt-24 px-4 sm:px-6 lg:px-8 ${
+      className={`w-full bg-transparent text-[#fcfbf7] min-h-screen pb-24 pt-6 sm:pt-8 px-4 sm:px-6 lg:px-8 ${
         isRtl ? 'text-right' : 'text-left'
       }`}
     >
@@ -602,39 +618,54 @@ export const FarmerDashboardSection: React.FC = () => {
         </div>
 
         {/* ========================================================= */}
-        {/* 4. TABS NAVIGATION: CROPS, ORDERS, REVIEWS, LOCATION      */}
+        {/* 4. COMPACT DASHBOARD NAVIGATION BAR: TABS                 */}
         {/* ========================================================= */}
-        <div className="flex items-center gap-2 pb-2 border-b border-[#d4af37]/25 overflow-x-auto no-scrollbar">
+        <div
+          id="farmer-dashboard-nav"
+          className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#12100c] border border-[#d4af37]/35 shadow-md overflow-x-auto no-scrollbar"
+        >
           {[
-            { id: 'inventory', label: `🌾 ${t('farmer.myCropsTab', 'My Crops & Stock')}`, count: totalListingsCount },
-            { id: 'orders', label: `📦 ${t('farmer.customerOrdersTab', 'Customer Orders')}`, count: farmerOrders.length },
-            { id: 'reviews', label: `⭐ ${t('farmer.patronRatingsTab', 'Patron Ratings')}`, count: farmerReviews.length },
-            { id: 'location', label: `📍 ${t('farmer.farmLocationTab', 'Farm Location & Map')}`, count: null },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveDashboardTab(tab.id as any)}
-              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-mono font-bold whitespace-nowrap transition-all border cursor-pointer flex items-center gap-2 ${
-                activeDashboardTab === tab.id
-                  ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e] shadow-lg'
-                  : 'bg-[#14120e] border-[#d4af37]/20 text-[#8e8b82] hover:text-[#fcfbf7]'
-              }`}
-            >
-              <span>{tab.label}</span>
-              {tab.count !== null && (
-                <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full">
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
+            { id: 'crops', label: 'My Crops & Produce', icon: Package, count: totalListingsCount },
+            { id: 'orders', label: 'Customer Orders', icon: ShoppingBag, count: farmerOrders.length },
+            { id: 'reviews', label: 'Customer Reviews', icon: Star, count: farmerReviews.length },
+            { id: 'location', label: 'Farm Coordinates & Map', icon: MapPin, count: null },
+          ].map((tab) => {
+            const isActive = activeDashboardTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                id={`farmer-nav-tab-${tab.id}`}
+                type="button"
+                onClick={() => setActiveDashboardTab(tab.id as any)}
+                className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-bold whitespace-nowrap transition-all duration-200 cursor-pointer flex items-center gap-2 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#d4af37]/25 via-[#d4af37]/15 to-[#fae69e]/10 border border-[#d4af37] text-[#fae69e] shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                    : 'bg-transparent border border-transparent text-[#a8a499] hover:text-[#fcfbf7] hover:bg-white/5'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#fae69e]' : 'text-[#d4af37]'}`} />
+                <span>{tab.label}</span>
+                {tab.count !== null && (
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isActive
+                        ? 'bg-[#d4af37]/30 text-[#fae69e] border border-[#d4af37]/40'
+                        : 'bg-white/10 text-[#aba79c]'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* ========================================================= */}
-        {/* TAB 1: INVENTORY MANAGEMENT (SIMPLE CROP CARDS)           */}
+        {/* TAB 1: MY CROPS & PRODUCE (3x2 INITIAL 6 ITEMS GRID)      */}
         {/* ========================================================= */}
-        {activeDashboardTab === 'inventory' && (
+        {activeDashboardTab === 'crops' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-80">
@@ -693,75 +724,108 @@ export const FarmerDashboardSection: React.FC = () => {
                 </Link>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {filteredInventory.map((item) => {
-                  const isLow = Number(item.quantity) <= 5 && Number(item.quantity) > 0;
-                  const isSold = Number(item.quantity) <= 0 || item.status === 'Sold Out';
-                  const localizedName = getLocalizedProduceName(item.name, language);
-                  const localizedCategory = getLocalizedCategory(item.category, language);
-                  const localizedUnit = getLocalizedUnit(item.unit, language);
+              <>
+                {/* Desktop layout: Exactly 3 columns x 2 rows for initial 6 products */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {visibleProduce.map((item) => {
+                    const isLow = Number(item.quantity) <= 5 && Number(item.quantity) > 0;
+                    const isSold = Number(item.quantity) <= 0 || item.status === 'Sold Out';
+                    const localizedName = getLocalizedProduceName(item.name, language);
+                    const localizedCategory = getLocalizedCategory(item.category, language);
+                    const localizedUnit = getLocalizedUnit(item.unit, language);
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-5 rounded-3xl bg-[#0f0e0c] border border-[#d4af37]/35 shadow-lg flex flex-col justify-between space-y-4 hover:border-[#d4af37]/70 transition-all"
-                    >
-                      <div className="flex items-center gap-4">
-                        <img
-                          src={getProduceImage(item)}
-                          alt={localizedName}
-                          className="w-18 h-18 rounded-2xl object-cover border border-[#d4af37]/40 shrink-0"
-                          loading="lazy"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-serif font-bold text-base text-[#fcfbf7] truncate">{localizedName}</h4>
-                          <span className="text-xs font-mono text-[#d4af37] block mt-0.5">{localizedCategory}</span>
-                          <div className="text-base font-mono font-bold text-[#fae69e] mt-1">
-                            ₹{item.pricePerUnit} <span className="text-xs text-[#8e8b82]">/{localizedUnit}</span>
+                    return (
+                      <div
+                        key={item.id}
+                        id={`farmer-dashboard-prod-${item.id}`}
+                        className="p-5 rounded-3xl bg-[#0f0e0c] border border-[#d4af37]/35 shadow-lg flex flex-col justify-between space-y-4 hover:border-[#d4af37]/70 transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-18 h-18 rounded-2xl overflow-hidden border border-[#d4af37]/40 shrink-0">
+                            <ProductImage
+                              src={getProduceImage(item)}
+                              alt={localizedName}
+                              productName={localizedName}
+                              category={item.category}
+                              size="sm"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-serif font-bold text-base text-[#fcfbf7] truncate">{localizedName}</h4>
+                            <span className="text-xs font-mono text-[#d4af37] block mt-0.5">{localizedCategory}</span>
+                            <div className="text-base font-mono font-bold text-[#fae69e] mt-1">
+                              ₹{item.pricePerUnit} <span className="text-xs text-[#8e8b82]">/{localizedUnit}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Stock Status Indicator */}
-                      <div className="p-3 rounded-xl bg-[#14120e] border border-[#d4af37]/20 flex items-center justify-between text-xs font-mono">
-                        <span className="text-[#8e8b82]">{t('farmer.availableStock', 'Available Stock')}:</span>
-                        <div className="flex items-center gap-1.5 font-bold">
-                          {isSold ? (
-                            <span className="text-[#f87171] flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-[#f87171]" />
-                              {t('farmer.soldOut', 'Sold Out')} (0 {localizedUnit})
-                            </span>
-                          ) : isLow ? (
-                            <span className="text-[#f59e0b] flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse" />
-                              {t('farmer.lowStock', 'Low Stock')}: {item.quantity} {localizedUnit}
-                            </span>
-                          ) : (
-                            <span className="text-[#34d399] flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-[#34d399]" />
-                              {t('farmer.inStock', 'In Stock')}: {item.quantity} {localizedUnit}
-                            </span>
-                          )}
+                        {/* Stock Status Indicator */}
+                        <div className="p-3 rounded-xl bg-[#14120e] border border-[#d4af37]/20 flex items-center justify-between text-xs font-mono">
+                          <span className="text-[#8e8b82]">{t('farmer.availableStock', 'Available Stock')}:</span>
+                          <div className="flex items-center gap-1.5 font-bold">
+                            {isSold ? (
+                              <span className="text-[#f87171] flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-[#f87171]" />
+                                {t('farmer.soldOut', 'Sold Out')} (0 {localizedUnit})
+                              </span>
+                            ) : isLow ? (
+                              <span className="text-[#f59e0b] flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-pulse" />
+                                {t('farmer.lowStock', 'Low Stock')}: {item.quantity} {localizedUnit}
+                              </span>
+                            ) : (
+                              <span className="text-[#34d399] flex items-center gap-1">
+                                <span className="w-2 h-2 rounded-full bg-[#34d399]" />
+                                {t('farmer.inStock', 'In Stock')}: {item.quantity} {localizedUnit}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Edit Button */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingProduce(item);
-                          setEditPrice(String(item.pricePerUnit));
-                          setEditQuantity(String(item.quantity));
-                        }}
-                        className="w-full py-3 rounded-2xl bg-[#1c180e] hover:bg-[#282012] border border-[#d4af37]/50 text-xs sm:text-sm font-mono font-bold text-[#fae69e] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
-                      >
-                        <Edit3 className="w-4 h-4 text-[#d4af37]" />
-                        <span>{t('farmer.changePriceOrStock', 'Change Price or Stock')}</span>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+                        {/* Edit Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProduce(item);
+                            setEditPrice(String(item.pricePerUnit));
+                            setEditQuantity(String(item.quantity));
+                            setEditError(null);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-2xl bg-[#1c180e] hover:bg-[#282012] border border-[#d4af37]/50 text-xs font-mono font-medium text-[#fae69e] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm overflow-hidden"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-[#d4af37] shrink-0" />
+                          <span className="truncate">{t('farmer.changePriceOrStock', 'Update price & stock anytime.')}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* View More Items / Show Less Button directly below grid */}
+                {hasMoreProduce && (
+                  <div className="pt-6 flex justify-center">
+                    <button
+                      id="view-more-farmer-produce-btn"
+                      type="button"
+                      onClick={() => setIsProduceExpanded(!isProduceExpanded)}
+                      className="group inline-flex items-center justify-center gap-2 py-3 px-8 rounded-2xl text-xs sm:text-sm font-mono font-bold uppercase tracking-wider bg-[#14120e] hover:bg-[#201a10] text-[#fae69e] border border-[#d4af37]/50 hover:border-[#d4af37] transition-all cursor-pointer shadow-md hover:shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                    >
+                      {isProduceExpanded ? (
+                        <>
+                          <span>Show Less</span>
+                          <ChevronUp className="w-4 h-4 text-[#d4af37] group-hover:-translate-y-0.5 transition-transform" />
+                        </>
+                      ) : (
+                        <>
+                          <span>View More Items</span>
+                          <ChevronDown className="w-4 h-4 text-[#d4af37] group-hover:translate-y-0.5 transition-transform" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -887,23 +951,73 @@ export const FarmerDashboardSection: React.FC = () => {
         )}
 
         {/* ========================================================= */}
-        {/* TAB 3: RATINGS & REVIEWS                                  */}
+        {/* TAB 3: CUSTOMER REVIEWS (FULL DETAILED SECTION)           */}
         {/* ========================================================= */}
         {activeDashboardTab === 'reviews' && (
-          <div className="p-6 sm:p-8 rounded-3xl bg-[#0f0e0c] border border-[#d4af37]/35 space-y-4">
-            <div className="flex items-center gap-3">
-              <Star className="w-6 h-6 text-[#d4af37]" />
-              <h3 className="font-serif text-xl font-bold text-[#fcfbf7]">
-                {t('farmer.verifiedPatronRatings', 'Verified Patron Ratings')}
-              </h3>
+          <div className="space-y-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-[#0f0e0c] border border-[#d4af37]/35 shadow-lg space-y-6">
+              <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-[#d4af37]/20">
+                <div className="flex items-center gap-3">
+                  <Star className="w-6 h-6 text-[#d4af37]" />
+                  <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#fcfbf7]">
+                    Customer Reviews & Feedback
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#18140c] border border-[#d4af37]/40 text-xs font-mono text-[#fae69e]">
+                  <span>Average Rating:</span>
+                  <strong className="text-base text-[#d4af37]">{reviewsStats.average.toFixed(1)} / 5.0</strong>
+                  <span className="text-[#aba79c]">({reviewsStats.totalCount} reviews)</span>
+                </div>
+              </div>
+
+              {farmerReviews.length === 0 ? (
+                <div className="py-12 text-center text-[#aba79c] space-y-2">
+                  <Star className="w-10 h-10 text-[#d4af37]/40 mx-auto mb-2" />
+                  <p className="font-serif text-lg text-[#fcfbf7]">No customer reviews yet</p>
+                  <p className="text-xs">Customer ratings and feedback on your harvests will appear here.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {farmerReviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-5 rounded-2xl bg-[#14120e] border border-[#d4af37]/25 shadow-sm space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-[#fcfbf7]">{rev.customerName}</span>
+                            {rev.verified && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono text-[#34d399] px-2 py-0.5 rounded-full bg-[#34d399]/10 border border-[#34d399]/30">
+                                <ShieldCheck className="w-3 h-3" />
+                                Verified Buyer
+                              </span>
+                            )}
+                          </div>
+                          {rev.produceName && (
+                            <span className="text-xs font-mono text-[#d4af37] block mt-0.5">
+                              Crop: {rev.produceName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <StarRating rating={rev.rating} size="xs" showNumeric={true} />
+                        </div>
+                      </div>
+                      <p className="text-xs sm:text-sm text-[#aba79c] leading-relaxed font-sans italic">
+                        "{rev.comment}"
+                      </p>
+                      <div className="text-[10px] font-mono text-[#736f66] pt-2 border-t border-[#d4af37]/15 flex items-center justify-between">
+                        <span>{rev.date}</span>
+                        {typeof rev.helpfulCount === 'number' && rev.helpfulCount > 0 && (
+                          <span>{rev.helpfulCount} found helpful</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <p className="text-xs sm:text-sm text-[#aba79c]">
-              {t('farmer.averagePatronScore', 'Average Patron Score')}:{' '}
-              <strong className="text-[#fae69e] text-base">
-                {reviewsStats.average.toFixed(1)} / 5.0
-              </strong>{' '}
-              ({reviewsStats.totalCount} {t('farmer.customerReviewsCount', 'customer reviews')})
-            </p>
           </div>
         )}
 
@@ -935,8 +1049,14 @@ export const FarmerDashboardSection: React.FC = () => {
                 {t('farmer.editProduceTitle', 'Change Price / Stock')} • {getLocalizedProduceName(editingProduce.name, language)}
               </h3>
               <button
-                onClick={() => setEditingProduce(null)}
-                className="text-[#8e8b82] hover:text-white p-1 cursor-pointer"
+                onClick={() => {
+                  if (!editLoading) {
+                    setEditingProduce(null);
+                    setEditError(null);
+                  }
+                }}
+                disabled={editLoading}
+                className="text-[#8e8b82] hover:text-white p-1 cursor-pointer disabled:opacity-40"
                 aria-label={t('common.cancel', 'Close modal')}
               >
                 <X className="w-6 h-6" />
@@ -950,9 +1070,15 @@ export const FarmerDashboardSection: React.FC = () => {
                 </label>
                 <input
                   type="number"
+                  step="0.5"
+                  min="0"
                   value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-[#18140e] border border-[#d4af37]/45 text-base text-[#fcfbf7] font-mono focus:outline-none focus:border-[#fae69e]"
+                  onChange={(e) => {
+                    setEditPrice(e.target.value);
+                    if (editError) setEditError(null);
+                  }}
+                  disabled={editLoading}
+                  className="w-full px-4 py-3.5 rounded-2xl bg-[#18140e] border border-[#d4af37]/45 text-base text-[#fcfbf7] font-mono focus:outline-none focus:border-[#fae69e] disabled:opacity-60"
                 />
               </div>
 
@@ -962,37 +1088,89 @@ export const FarmerDashboardSection: React.FC = () => {
                 </label>
                 <input
                   type="number"
+                  step="1"
+                  min="0"
                   value={editQuantity}
-                  onChange={(e) => setEditQuantity(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-[#18140e] border border-[#d4af37]/45 text-base text-[#fcfbf7] font-mono focus:outline-none focus:border-[#fae69e]"
+                  onChange={(e) => {
+                    setEditQuantity(e.target.value);
+                    if (editError) setEditError(null);
+                  }}
+                  disabled={editLoading}
+                  className="w-full px-4 py-3.5 rounded-2xl bg-[#18140e] border border-[#d4af37]/45 text-base text-[#fcfbf7] font-mono focus:outline-none focus:border-[#fae69e] disabled:opacity-60"
                 />
               </div>
             </div>
 
+            {/* Clear Error Message Display */}
+            {editError && (
+              <div className="p-3.5 rounded-2xl bg-red-950/70 border border-red-500/60 text-red-200 text-xs font-sans flex items-start gap-2.5 shadow-md">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{editError}</span>
+              </div>
+            )}
+
             <div className="pt-3 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setEditingProduce(null)}
-                className="px-5 py-3 rounded-2xl bg-[#1a160e] text-[#aba79c] text-xs font-mono cursor-pointer"
+                onClick={() => {
+                  if (!editLoading) {
+                    setEditingProduce(null);
+                    setEditError(null);
+                  }
+                }}
+                disabled={editLoading}
+                className="px-5 py-3 rounded-2xl bg-[#1a160e] text-[#aba79c] text-xs font-mono cursor-pointer disabled:opacity-50 hover:text-white transition-colors"
               >
                 {t('common.cancel', 'Cancel')}
               </button>
               <button
                 type="button"
                 onClick={async () => {
+                  if (editLoading || !editingProduce) return;
+
+                  const parsedPrice = parseFloat(editPrice);
+                  const parsedQuantity = parseFloat(editQuantity);
+
+                  if (isNaN(parsedPrice) || parsedPrice < 0) {
+                    setEditError('Please enter a valid price per unit (₹ 0 or greater).');
+                    return;
+                  }
+                  if (isNaN(parsedQuantity) || parsedQuantity < 0) {
+                    setEditError('Please enter a valid stock quantity (0 or greater).');
+                    return;
+                  }
+
                   setEditLoading(true);
-                  await updateListing(editingProduce.id, {
-                    pricePerUnit: Number(editPrice),
-                    quantity: Number(editQuantity),
-                    status: Number(editQuantity) > 0 ? 'Active' : 'Sold Out',
-                  });
-                  setEditLoading(false);
-                  setEditingProduce(null);
+                  setEditError(null);
+
+                  try {
+                    const result = await updateListing(editingProduce.id, {
+                      pricePerUnit: parsedPrice,
+                      quantity: parsedQuantity,
+                      status: parsedQuantity > 0 ? 'Active' : 'Sold Out',
+                    });
+
+                    if (result) {
+                      setEditingProduce(null);
+                    }
+                  } catch (err: any) {
+                    console.error('[FarmerDashboard] Failed to update produce:', err);
+                    setEditError(err?.message || 'Failed to update produce listing. Please try again.');
+                  } finally {
+                    setEditLoading(false);
+                  }
                 }}
                 disabled={editLoading}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs sm:text-sm uppercase tracking-wider hover:brightness-110 shadow-lg cursor-pointer disabled:opacity-50"
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs sm:text-sm uppercase tracking-wider hover:brightness-110 shadow-lg cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
-                {editLoading ? t('common.loading', 'Saving...') : t('common.save', 'Save Changes')}
+                {editLoading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>{t('common.loading', 'Saving...')}</span>
+                  </>
+                ) : (
+                  <span>{t('common.save', 'Save Changes')}</span>
+                )}
               </button>
             </div>
           </div>

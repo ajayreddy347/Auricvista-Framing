@@ -1,4 +1,10 @@
-import { getCanonicalProduct, CANONICAL_PRODUCTS, CanonicalProduct } from './canonicalProducts';
+import {
+  getCanonicalProduct,
+  CANONICAL_PRODUCTS,
+  CanonicalProduct,
+  NEUTRAL_CROP_PLACEHOLDER,
+  DATABASE_LISTING_ASSETS,
+} from './canonicalProducts';
 
 export interface ProduceLike {
   id?: string;
@@ -8,22 +14,25 @@ export interface ProduceLike {
   image?: string;
 }
 
-// Neutral placeholder if a product is ever completely unrecognized (NEVER return a wrong crop)
-export const NEUTRAL_CROP_PLACEHOLDER =
-  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" fill="%230c0a07"><rect width="800" height="800" fill="%2312100c"/><circle cx="400" cy="380" r="140" fill="%231c180e" stroke="%23d4af37" stroke-width="3" stroke-dasharray="6,6"/><path d="M400 300 C430 300 450 330 450 370 C450 410 420 440 400 450 C380 440 350 410 350 370 C350 330 370 300 400 300 Z" fill="none" stroke="%23d4af37" stroke-width="4"/><text x="400" y="580" text-anchor="middle" font-family="sans-serif" font-size="22" font-weight="bold" fill="%23fae69e" letter-spacing="2">AUTHENTIC INDIAN HARVEST</text><text x="400" y="615" text-anchor="middle" font-family="monospace" font-size="14" fill="%238e8b82">Direct from Verified Organic Farm</text></svg>';
+export { NEUTRAL_CROP_PLACEHOLDER };
 
 /**
  * Returns the exact verified canonical image URL for any agricultural produce item.
  * Strictly resolves to the single authoritative product identity.
+ * 
+ * Order of Resolution:
+ * 1. Direct database ID lookup or strict canonical product matching
+ * 2. Explicit verified local asset path (/assets/produce/...)
+ * 3. Clean neutral placeholder (NEVER a wrong crop or unrelated food)
  */
 export function getProduceImage(produce?: ProduceLike | string | null): string {
   if (!produce) {
     return NEUTRAL_CROP_PLACEHOLDER;
   }
 
-  // 1. Strict Canonical Product Registry Resolution (Priority 1)
+  // 1. Direct Product ID or Name Canonical Resolution
   const canonical = getCanonicalProduct(produce);
-  if (canonical) {
+  if (canonical && canonical.image) {
     return canonical.image;
   }
 
@@ -31,9 +40,9 @@ export function getProduceImage(produce?: ProduceLike | string | null): string {
   if (typeof produce === 'object') {
     if (Array.isArray(produce.images) && produce.images.length > 0 && typeof produce.images[0] === 'string') {
       const url = produce.images[0].trim();
-      if (url.startsWith('/assets/')) return url;
+      if (url.startsWith('/assets/produce/')) return url;
     }
-    if (typeof produce.image === 'string' && produce.image.trim().startsWith('/assets/')) {
+    if (typeof produce.image === 'string' && produce.image.trim().startsWith('/assets/produce/')) {
       return produce.image.trim();
     }
   }
@@ -58,5 +67,5 @@ export function getProduceCanonicalName(produce?: ProduceLike | string | null): 
   return canonical ? canonical.name : (typeof produce === 'string' ? produce : produce?.name || 'Produce');
 }
 
-export { CANONICAL_PRODUCTS };
+export { CANONICAL_PRODUCTS, DATABASE_LISTING_ASSETS };
 export type { CanonicalProduct };

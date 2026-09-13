@@ -23,6 +23,9 @@ import {
   User,
   ShieldCheck,
   TrendingUp,
+  Menu,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { ProductDetailModal } from './ProductDetailModal';
 import { FarmerProfileModal, FarmerProfileData } from './FarmerProfileModal';
@@ -30,15 +33,19 @@ import { useProduce, ProduceListing } from '../context/ProduceContext';
 import { useReviews } from '../context/ReviewsContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { findFarmerByListingOrName } from '../utils/farmerLocalization';
 import { GoogleFarmMap } from './GoogleFarmMap';
+import { ProductImage } from './ProductImage';
 
 export const ProduceMarketplace: React.FC = () => {
   const { listings, isLoading, error } = useProduce();
   const { getProductStats } = useReviews();
   const { addToCart } = useCart();
   const { language, t } = useLanguage();
+  const { isDark } = useTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<string>('ALL');
@@ -49,6 +56,13 @@ export const ProduceMarketplace: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProduceListing | null>(null);
   const [selectedFarmer, setSelectedFarmer] = useState<FarmerProfileData | null>(null);
   const [cartSuccessId, setCartSuccessId] = useState<string | null>(null);
+
+  // Category collapsible bar state (initially collapsed)
+  const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
+
+  // Category section product limits state (first 4 items initially)
+  const [expandedCategorySections, setExpandedCategorySections] = useState<Record<string, boolean>>({});
+  const [isSingleCategoryExpanded, setIsSingleCategoryExpanded] = useState(false);
 
   // Category definitions
   const categoryDefinitions = [
@@ -286,24 +300,8 @@ export const ProduceMarketplace: React.FC = () => {
 
   const handleOpenFarmerProfile = (prod: ProduceListing, e: React.MouseEvent) => {
     e.stopPropagation();
-    const farmerSlug = prod.farmerName.toLowerCase().includes('ravi')
-      ? 'ravi-kumar'
-      : prod.farmerName.toLowerCase().includes('lakshmi')
-      ? 'lakshmi-devi'
-      : 'suresh-naidu';
-
-    setSelectedFarmer({
-      id: farmerSlug,
-      name: prod.farmerName,
-      farmerId: prod.farmerId || (prod.farmerName.toLowerCase().includes('ravi') ? 'AV-FARM-1001' : 'AV-FARM-1002'),
-      role: 'Verified Direct Grower',
-      location: prod.farmLocation,
-      experience: '12+ Years Natural Soil Cultivation',
-      specialty: prod.category,
-      acreage: '8 Acres Heritage Soil',
-      initials: prod.farmerName.split(' ').map((n) => n[0]).join(''),
-      highlightBadge: 'Direct Producer',
-    });
+    const farmerData = findFarmerByListingOrName(prod.farmerName, prod.farmerId);
+    setSelectedFarmer(farmerData);
   };
 
   const handleAddToCartQuick = (prod: ProduceListing, e: React.MouseEvent) => {
@@ -455,23 +453,35 @@ export const ProduceMarketplace: React.FC = () => {
   }, [sortedListings, selectedCategoryTab, searchQuery]);
 
   return (
-    <div className="w-full bg-transparent text-[#fcfbf7] min-h-screen pb-28">
+    <div className={`w-full bg-transparent min-h-screen pb-28 ${isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'}`}>
       {/* 1. MARKETPLACE HEADER */}
-      <section className="relative pt-24 pb-8 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#16120b]/80 via-[#0c0a07]/75 to-transparent backdrop-blur-[2px] border-b border-[#d4af37]/25">
+      <section className={`relative pt-6 sm:pt-8 pb-8 px-4 sm:px-6 lg:px-8 border-b transition-colors duration-300 ${
+        isDark
+          ? 'bg-gradient-to-b from-[#16120b]/80 via-[#0c0a07]/75 to-transparent backdrop-blur-[2px] border-[#d4af37]/25'
+          : 'bg-white/95 border-[#e7e4dc] shadow-xs'
+      }`}>
         <div className="max-w-7xl mx-auto w-full">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <span className="text-[11px] font-mono uppercase tracking-[0.25em] text-[#d4af37] font-semibold block mb-1">
+              <span className={`text-[11px] font-mono uppercase tracking-[0.25em] font-semibold block mb-1 ${
+                isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'
+              }`}>
                 {t('nav.brand', 'AURIC AROHI')} {t('nav.marketplace', 'MARKETPLACE')}
               </span>
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-[#fcfbf7]">
+              <h1 className={`font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight ${
+                isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'
+              }`}>
                 {t('market.title', 'Fresh produce, directly from Indian farmers.')}
               </h1>
             </div>
 
             {/* In-Stock Harvest Live Badge */}
-            <div className="inline-flex items-center gap-2 font-mono text-xs text-[#fae69e] bg-[#14120c] px-4 py-2 rounded-2xl border border-[#d4af37]/35 shadow-[0_0_20px_rgba(212,175,55,0.15)]">
-              <span className="w-2 h-2 rounded-full bg-[#34d399] animate-pulse" />
+            <div className={`inline-flex items-center gap-2 font-mono text-xs px-4 py-2 rounded-2xl border shadow-xs ${
+              isDark
+                ? 'text-[#fae69e] bg-[#14120c] border-[#d4af37]/35 shadow-[0_0_20px_rgba(212,175,55,0.15)]'
+                : 'text-[#8f6208] bg-white border-[#e7e4dc]'
+            }`}>
+              <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse" />
               <span>
                 <strong>{listings.filter((l) => l.status === 'Active').length}</strong> {t('market.inStock', 'Active Crops in PostgreSQL')}
               </span>
@@ -482,19 +492,27 @@ export const ProduceMarketplace: React.FC = () => {
           <div className="mt-7 flex flex-col sm:flex-row items-center gap-3">
             {/* Full-width Search Input */}
             <div className="relative flex-1 w-full">
-              <Search className="w-4 h-4 text-[#d4af37] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className={`w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none ${
+                isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'
+              }`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('market.searchPlaceholder', 'Search for fruits, vegetables, spices, grains or farmers...')}
-                className="w-full pl-11 pr-10 py-3.5 rounded-2xl bg-[#14120e] border border-[#d4af37]/40 text-xs sm:text-sm text-[#fcfbf7] placeholder-[#7a766e] focus:outline-none focus:border-[#fae69e] focus:ring-1 focus:ring-[#fae69e] shadow-inner transition-all"
+                className={`w-full pl-11 pr-10 py-3.5 rounded-2xl border text-xs sm:text-sm focus:outline-none transition-all ${
+                  isDark
+                    ? 'bg-[#14120e] border-[#d4af37]/40 text-[#fcfbf7] placeholder-[#7a766e] focus:border-[#fae69e] focus:ring-1 focus:ring-[#fae69e] shadow-inner'
+                    : 'bg-white border-[#e7e4dc] text-[#1c1917] placeholder-[#a8a29e] focus:border-[#b89120] focus:ring-1 focus:ring-[#b89120] shadow-xs'
+                }`}
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#8e8b82] hover:text-[#fcfbf7] p-1 cursor-pointer"
+                  className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-xs p-1 cursor-pointer ${
+                    isDark ? 'text-[#8e8b82] hover:text-[#fcfbf7]' : 'text-[#78716c] hover:text-[#1c1917]'
+                  }`}
                   title="Clear search"
                   aria-label="Clear search"
                 >
@@ -507,9 +525,13 @@ export const ProduceMarketplace: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsMobileFilterOpen(true)}
-              className="sm:hidden w-full py-3.5 px-4 rounded-2xl bg-[#1a160f] border border-[#d4af37]/40 text-xs font-mono font-bold text-[#fae69e] flex items-center justify-center gap-2 cursor-pointer"
+              className={`sm:hidden w-full py-3.5 px-4 rounded-2xl border text-xs font-mono font-bold flex items-center justify-center gap-2 cursor-pointer ${
+                isDark
+                  ? 'bg-[#1a160f] border-[#d4af37]/40 text-[#fae69e]'
+                  : 'bg-white border-[#e7e4dc] text-[#8f6208] shadow-xs'
+              }`}
             >
-              <SlidersHorizontal className="w-4 h-4 text-[#d4af37]" />
+              <SlidersHorizontal className={`w-4 h-4 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
               <span>{t('market.filterAndSort', 'Filter & Sort')}</span>
               {(inStockOnly || sortBy !== 'recommended' || selectedCategoryTab !== 'ALL') && (
                 <span className="w-2 h-2 rounded-full bg-[#d4af37]" />
@@ -518,10 +540,12 @@ export const ProduceMarketplace: React.FC = () => {
           </div>
 
           {/* Desktop Filter / Sort Bar */}
-          <div className="hidden sm:flex items-center justify-between gap-4 mt-4 pt-4 border-t border-[#d4af37]/15">
-            <div className="text-xs font-mono text-[#aba79c]">
+          <div className={`hidden sm:flex items-center justify-between gap-4 mt-4 pt-4 border-t ${
+            isDark ? 'border-[#d4af37]/15' : 'border-[#e7e4dc]'
+          }`}>
+            <div className={`text-xs font-mono ${isDark ? 'text-[#aba79c]' : 'text-[#78716c]'}`}>
               {t('market.showing', 'Showing')}{' '}
-              <strong className="text-[#fae69e]">{sortedListings.length}</strong>{' '}
+              <strong className={isDark ? 'text-[#fae69e]' : 'text-[#8f6208]'}>{sortedListings.length}</strong>{' '}
               {t('market.produceItems', 'verified farm produce listings')}
             </div>
 
@@ -531,13 +555,21 @@ export const ProduceMarketplace: React.FC = () => {
                 onClick={() => setInStockOnly(!inStockOnly)}
                 className={`py-2 px-3.5 rounded-xl border text-xs font-mono font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                   inStockOnly
-                    ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e] shadow-[0_0_15px_rgba(212,175,55,0.2)]'
-                    : 'bg-[#14120e] border-[#d4af37]/25 text-[#8e8b82] hover:text-[#fcfbf7]'
+                    ? isDark
+                      ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e] shadow-[0_0_15px_rgba(212,175,55,0.2)]'
+                      : 'bg-[#fbf9f4] border-[#b89120] text-[#8f6208] shadow-xs'
+                    : isDark
+                    ? 'bg-[#14120e] border-[#d4af37]/25 text-[#8e8b82] hover:text-[#fcfbf7]'
+                    : 'bg-white border-[#e7e4dc] text-[#57534e] hover:border-[#b89120] hover:text-[#1c1917]'
                 }`}
               >
                 <div
                   className={`w-3.5 h-3.5 rounded-md border flex items-center justify-center ${
-                    inStockOnly ? 'bg-[#d4af37] border-[#fae69e]' : 'border-[#8e8b82]'
+                    inStockOnly
+                      ? 'bg-[#d4af37] border-[#fae69e]'
+                      : isDark
+                      ? 'border-[#8e8b82]'
+                      : 'border-[#a8a29e]'
                   }`}
                 >
                   {inStockOnly && <Check className="w-3 h-3 text-[#0a0a0a]" />}
@@ -546,11 +578,17 @@ export const ProduceMarketplace: React.FC = () => {
               </button>
 
               <div className="relative">
-                <ArrowUpDown className="w-3.5 h-3.5 text-[#d4af37] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ArrowUpDown className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none ${
+                  isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'
+                }`} />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="pl-8 pr-4 py-2 rounded-xl bg-[#14120e] border border-[#d4af37]/35 text-xs text-[#fcfbf7] focus:outline-none focus:border-[#fae69e] cursor-pointer"
+                  className={`pl-8 pr-4 py-2 rounded-xl border text-xs cursor-pointer focus:outline-none ${
+                    isDark
+                      ? 'bg-[#14120e] border-[#d4af37]/35 text-[#fcfbf7] focus:border-[#fae69e]'
+                      : 'bg-white border-[#e7e4dc] text-[#1c1917] focus:border-[#b89120] shadow-xs'
+                  }`}
                 >
                   <option value="recommended">{t('market.sortRecommended', 'Sort: Recommended')}</option>
                   <option value="price-low">{t('market.priceLow', 'Price: Low to High')}</option>
@@ -565,118 +603,110 @@ export const ProduceMarketplace: React.FC = () => {
       </section>
 
       {/* 3. MAIN PRODUCT CATALOG CONTENT */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-10">
-        {/* RESPONSIVE CATEGORY EXPLORATION GRID */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg sm:text-xl font-bold text-[#fcfbf7] flex items-center gap-2.5">
-              <Layers className="w-5 h-5 text-[#d4af37]" />
-              <span>{t('market.browseCategories', 'Explore Farm Categories')}</span>
-            </h2>
-            <span className="text-xs font-mono text-[#aba79c]">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-8">
+        {/* SLEEK HORIZONTAL CATEGORY FILTER TABS (COLLAPSIBLE) */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              {/* Clear "=" / Hamburger-style Toggle Button */}
+              <button
+                type="button"
+                id="categories-hamburger-toggle"
+                onClick={() => setIsCategoriesExpanded((prev) => !prev)}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold transition-all duration-200 cursor-pointer shadow-xs select-none ${
+                  isCategoriesExpanded
+                    ? isDark
+                      ? 'bg-[#d4af37]/25 border-[#d4af37] text-[#fae69e] shadow-[0_0_12px_rgba(212,175,55,0.3)]'
+                      : 'bg-[#faf6ee] border-[#b89120] text-[#8f6208] shadow-xs'
+                    : isDark
+                    ? 'bg-[#14120e] hover:bg-[#201a10] border-[#d4af37]/35 text-[#d4af37] hover:border-[#d4af37]'
+                    : 'bg-white hover:bg-[#faf8f4] border-[#d4af37]/45 text-[#8f6208] hover:border-[#b89120]'
+                }`}
+                title={isCategoriesExpanded ? 'Collapse categories' : 'Expand all categories'}
+                aria-label="Toggle categories list"
+                aria-expanded={isCategoriesExpanded}
+              >
+                <Menu className="w-4 h-4 text-[#d4af37]" />
+                <span className="font-bold text-sm leading-none">=</span>
+                <span className="text-[11px] uppercase tracking-wider">
+                  {isCategoriesExpanded ? t('common.collapse', 'Collapse') : t('market.browseCategories', 'Categories')}
+                </span>
+                {isCategoriesExpanded ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-[#d4af37]" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-[#d4af37]" />
+                )}
+              </button>
+
+              <h2 className={`text-xs font-mono uppercase tracking-wider font-semibold flex items-center gap-2 ${
+                isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'
+              }`}>
+                <Layers className={`w-4 h-4 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
+                <span>{t('market.browseCategories', 'Categories')}</span>
+              </h2>
+            </div>
+
+            <span className={`text-[11px] font-mono ${isDark ? 'text-[#aba79c]' : 'text-[#78716c]'}`}>
               {selectedCategoryTab === 'ALL'
-                ? t('market.allCategoriesActive', 'All Categories Active')
-                : `${t('market.categoryActive', 'Category')}: ${selectedCategoryTab}`}
+                ? t('market.allCategoriesActive', 'All Produce')
+                : `${t('market.categoryActive', 'Filtered')}: ${selectedCategoryTab}`}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
-            {categoryDefinitions.map((cat) => {
-              const isSelected = selectedCategoryTab === cat.key;
-              const count =
-                cat.key === 'ALL'
-                  ? listings.length
-                  : listings.filter((l) => (cat.matchFn ? cat.matchFn(l) : l.category.toUpperCase() === cat.key)).length;
+          {/* Collapsible Category Pill Drawer */}
+          <AnimatePresence>
+            {isCategoriesExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden"
+              >
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar">
+                  {categoryDefinitions.map((cat) => {
+                    const isSelected = selectedCategoryTab === cat.key;
+                    const count =
+                      cat.key === 'ALL'
+                        ? listings.length
+                        : listings.filter((l) => (cat.matchFn ? cat.matchFn(l) : l.category.toUpperCase() === cat.key)).length;
 
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => setSelectedCategoryTab(cat.key)}
-                  className={`group relative p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all duration-300 cursor-pointer flex flex-col justify-between text-left overflow-hidden ${
-                    isSelected
-                      ? 'bg-gradient-to-br from-[#2c2210] via-[#1a140b] to-[#100d07] border-[#d4af37] shadow-[0_0_25px_rgba(212,175,55,0.3)] ring-1 ring-[#fae69e]/60 scale-[1.02]'
-                      : 'bg-gradient-to-br from-[#14120e] to-[#0c0b08] border-[#d4af37]/20 hover:border-[#d4af37]/60 hover:bg-[#1c1812]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-3">
-                    <span className="text-2xl sm:text-3xl p-2 rounded-2xl bg-black/40 border border-[#d4af37]/25 shadow-inner group-hover:scale-110 transition-transform">
-                      {cat.emoji}
-                    </span>
-                    <span
-                      className={`text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full ${
-                        isSelected
-                          ? 'bg-[#d4af37] text-[#0a0a0a]'
-                          : 'bg-[#1e1a12] text-[#fae69e] border border-[#d4af37]/30'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3
-                      className={`font-serif text-xs sm:text-sm md:text-base font-bold transition-colors line-clamp-1 ${
-                        isSelected ? 'text-[#fae69e]' : 'text-[#fcfbf7] group-hover:text-[#fae69e]'
-                      }`}
-                    >
-                      {t(cat.labelKey, cat.defaultLabel)}
-                    </h3>
-                    <p className="text-[10px] sm:text-[11px] font-mono text-[#8e8b82] mt-0.5">
-                      {count} {t('market.items', 'items')}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-        {/* AI SHOPPING RECOMMENDATIONS: "Picked for You" */}
-        {!searchQuery && selectedCategoryTab === 'ALL' && seasonalRecommendations.length > 0 && (
-          <section className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#16120b] via-[#100e0a] to-[#0a0a0a] border-2 border-[#d4af37]/35 shadow-lg space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#d4af37]" />
-                <h2 className="font-serif text-lg sm:text-xl font-bold text-[#fae69e]">
-                  Picked for You • Fresh Dawn Recommendations
-                </h2>
-              </div>
-              <span className="text-[10px] font-mono text-[#8e8b82] uppercase">
-                Verified Indian Growers
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {seasonalRecommendations.map((prod) => (
-                <div
-                  key={prod.id}
-                  onClick={() => setSelectedProduct(prod)}
-                  className="p-2.5 rounded-2xl bg-[#14110c] border border-[#d4af37]/30 hover:border-[#fae69e] transition-all cursor-pointer flex flex-col justify-between space-y-2 group shadow-[0_0_15px_-5px_rgba(212,175,55,0.15)] hover:shadow-[0_0_25px_0_rgba(212,175,55,0.3)]"
-                >
-                  <div className="h-28 rounded-xl overflow-hidden bg-[#1a160e]">
-                    <img
-                      src={getProduceImage(prod)}
-                      alt={prod.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-serif font-bold text-xs sm:text-sm text-[#fcfbf7] truncate">
-                      {prod.name}
-                    </h4>
-                    <div className="text-[10px] font-mono text-[#8e8b82] truncate mt-0.5">
-                      👨🌾 {prod.farmerName}
-                    </div>
-                  </div>
-                  <div className="flex items-baseline justify-between font-mono text-xs pt-1 border-t border-[#d4af37]/15">
-                    <span className="font-bold text-[#fae69e]">₹{prod.pricePerUnit}</span>
-                    <span className="text-[10px] text-[#8e8b82]">/{prod.unit}</span>
-                  </div>
+                    return (
+                      <button
+                        key={cat.key}
+                        type="button"
+                        onClick={() => setSelectedCategoryTab(cat.key)}
+                        className={`group inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-medium transition-all duration-200 cursor-pointer shrink-0 ${
+                          isSelected
+                            ? isDark
+                              ? 'bg-gradient-to-r from-[#2c2210] to-[#1c160b] border-[#d4af37] text-[#fae69e] shadow-[0_0_15px_rgba(212,175,55,0.25)] font-semibold'
+                              : 'bg-[#fbf9f4] border-[#b89120] text-[#8f6208] shadow-xs font-semibold'
+                            : isDark
+                            ? 'bg-[#12100d]/90 border-[#d4af37]/20 text-[#aba79c] hover:border-[#d4af37]/50 hover:text-[#fcfbf7]'
+                            : 'bg-white border-[#e7e4dc] text-[#57534e] hover:border-[#b89120] hover:text-[#1c1917]'
+                        }`}
+                      >
+                        <span className="text-base">{cat.emoji}</span>
+                        <span>{t(cat.labelKey, cat.defaultLabel)}</span>
+                        <span
+                          className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
+                            isSelected
+                              ? 'bg-[#d4af37] text-[#0a0a0a] font-bold'
+                              : isDark
+                              ? 'bg-[#1e1a12] text-[#8e8b82]'
+                              : 'bg-[#f5f3eb] text-[#78716c]'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
 
         {/* LOADING STATE SKELETON */}
         {isLoading ? (
@@ -708,14 +738,18 @@ export const ProduceMarketplace: React.FC = () => {
           </div>
         ) : sortedListings.length === 0 ? (
           /* Empty / AI-Assisted Search Empty State */
-          <div className="py-20 text-center space-y-5 max-w-md mx-auto p-8 rounded-3xl bg-[#12100c] border border-[#d4af37]/30 shadow-lg">
-            <div className="w-14 h-14 rounded-full bg-[#1c180e] border border-[#d4af37]/50 flex items-center justify-center text-[#fae69e] mx-auto shadow-[0_0_20px_rgba(212,175,55,0.2)]">
-              <ShoppingBag className="w-6 h-6 text-[#d4af37]" />
+          <div className={`py-20 text-center space-y-5 max-w-md mx-auto p-8 rounded-3xl border shadow-lg ${
+            isDark ? 'bg-[#12100c] border-[#d4af37]/30' : 'bg-white border-[#e7e4dc]'
+          }`}>
+            <div className={`w-14 h-14 rounded-full border flex items-center justify-center mx-auto shadow-xs ${
+              isDark ? 'bg-[#1c180e] border-[#d4af37]/50 text-[#fae69e]' : 'bg-[#faf8f5] border-[#d4af37]/45 text-[#8f6208]'
+            }`}>
+              <ShoppingBag className={`w-6 h-6 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
             </div>
-            <h3 className="font-serif text-xl font-bold text-[#fcfbf7]">
+            <h3 className={`font-serif text-xl font-bold ${isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'}`}>
               {searchQuery ? t('market.noResults', 'No matching produce found.') : t('market.categoryEmpty', 'No produce available in this category yet.')}
             </h3>
-            <p className="text-xs text-[#aba79c] leading-relaxed">
+            <p className={`text-xs leading-relaxed ${isDark ? 'text-[#aba79c]' : 'text-[#78716c]'}`}>
               {searchQuery
                 ? 'Try refining your query or let Auric Arohi AI suggest seasonal alternatives from active growers.'
                 : t('market.checkOtherCategory', 'Explore our other direct farm categories above.')}
@@ -729,7 +763,11 @@ export const ProduceMarketplace: React.FC = () => {
                   setSelectedCategoryTab('ALL');
                   setInStockOnly(false);
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#201a0e] border border-[#d4af37]/40 text-xs font-mono text-[#fae69e] hover:bg-[#2e2412] cursor-pointer"
+                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl border text-xs font-mono cursor-pointer transition-colors ${
+                  isDark
+                    ? 'bg-[#201a0e] border-[#d4af37]/40 text-[#fae69e] hover:bg-[#2e2412]'
+                    : 'bg-white border-[#d4af37]/45 text-[#8f6208] hover:bg-[#faf8f5] shadow-xs'
+                }`}
               >
                 {t('market.clearSearch', 'Clear Search & Filters')}
               </button>
@@ -738,57 +776,104 @@ export const ProduceMarketplace: React.FC = () => {
         ) : selectedCategoryTab === 'ALL' && activeCategorySections && activeCategorySections.length > 0 ? (
           /* CATEGORY-FIRST SECTIONED SHOPPING (WHEN "ALL" IS SELECTED) */
           <div className="space-y-12">
-            {activeCategorySections.map((sec) => (
-              <section key={sec.definition.key} className="space-y-4">
-                <div className="flex items-center justify-between pb-2 border-b border-[#d4af37]/20">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{sec.definition.emoji}</span>
-                    <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#fcfbf7]">
-                      {t(sec.definition.sectionTitleKey || sec.definition.labelKey, sec.definition.sectionDefault || sec.definition.defaultLabel)}
-                    </h2>
-                    <span className="text-xs font-mono text-[#8e8b82]">({sec.items.length})</span>
+            {activeCategorySections.map((sec) => {
+              const isCategoryExpanded = Boolean(expandedCategorySections[sec.definition.key]);
+              const visibleItems = isCategoryExpanded ? sec.items : sec.items.slice(0, 4);
+              const hasMore = sec.items.length > 4;
+
+              return (
+                <section key={sec.definition.key} className="space-y-4">
+                  <div className={`flex items-center justify-between pb-2 border-b ${
+                    isDark ? 'border-[#d4af37]/20' : 'border-[#e7e4dc]'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{sec.definition.emoji}</span>
+                      <h2 className={`font-serif text-xl sm:text-2xl font-bold ${isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'}`}>
+                        {t(sec.definition.sectionTitleKey || sec.definition.labelKey, sec.definition.sectionDefault || sec.definition.defaultLabel)}
+                      </h2>
+                      <span className={`text-xs font-mono ${isDark ? 'text-[#8e8b82]' : 'text-[#78716c]'}`}>({sec.items.length})</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategoryTab(sec.definition.key)}
+                      className={`text-xs font-mono hover:underline flex items-center gap-1 cursor-pointer ${
+                        isDark ? 'text-[#fae69e]' : 'text-[#8f6208]'
+                      }`}
+                    >
+                      <span>{t('market.viewAllCategory', 'View Category')}</span>
+                      <ArrowRight className={`w-3 h-3 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedCategoryTab(sec.definition.key)}
-                    className="text-xs font-mono text-[#fae69e] hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>{t('market.viewAllCategory', 'View Category')}</span>
-                    <ArrowRight className="w-3 h-3 text-[#d4af37]" />
-                  </button>
-                </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4">
+                    {visibleItems.map((prod) => (
+                      <ProductCard
+                        key={prod.id}
+                        produce={prod}
+                        imageSrc={getProduceImage(prod)}
+                        onOpenDetail={() => setSelectedProduct(prod)}
+                        onOpenFarmer={(e) => handleOpenFarmerProfile(prod, e)}
+                        onAddToCart={(e) => handleAddToCartQuick(prod, e)}
+                        isAdded={cartSuccessId === prod.id}
+                        t={t}
+                        stats={getProductStats(prod.id)}
+                      />
+                    ))}
+                  </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-                  {sec.items.map((prod) => (
-                    <ProductCard
-                      key={prod.id}
-                      produce={prod}
-                      imageSrc={getProduceImage(prod)}
-                      onOpenDetail={() => setSelectedProduct(prod)}
-                      onOpenFarmer={(e) => handleOpenFarmerProfile(prod, e)}
-                      onAddToCart={(e) => handleAddToCartQuick(prod, e)}
-                      isAdded={cartSuccessId === prod.id}
-                      t={t}
-                      stats={getProductStats(prod.id)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+                  {/* View More Items / Show Less Button */}
+                  {hasMore && (
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        type="button"
+                        id={`view-more-cat-${sec.definition.key.toLowerCase()}`}
+                        onClick={() => {
+                          setExpandedCategorySections((prev) => ({
+                            ...prev,
+                            [sec.definition.key]: !prev[sec.definition.key],
+                          }));
+                        }}
+                        className={`group inline-flex items-center justify-center gap-2 py-2 px-5 rounded-xl border text-xs font-mono font-semibold transition-all duration-200 cursor-pointer shadow-xs ${
+                          isDark
+                            ? 'bg-[#14120c]/80 hover:bg-[#d4af37]/15 border-[#d4af37]/35 hover:border-[#d4af37] text-[#fae69e]'
+                            : 'bg-white hover:bg-[#faf8f4] border-[#d4af37]/45 hover:border-[#b89120] text-[#8f6208]'
+                        }`}
+                      >
+                        {isCategoryExpanded ? (
+                          <>
+                            <span>{t('farmer.showLess', 'Show Less')}</span>
+                            <ChevronUp className="w-3.5 h-3.5 text-[#d4af37]" />
+                          </>
+                        ) : (
+                          <>
+                            <span>{t('farmer.viewMoreItems', 'View More Items')} ({sec.items.length - 4} more)</span>
+                            <ChevronDown className="w-3.5 h-3.5 text-[#d4af37]" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         ) : (
           /* SINGLE CATEGORY / FILTERED GRID VIEW */
           <div>
-            <div className="flex items-center justify-between mb-6 pb-2 border-b border-[#d4af37]/20">
-              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#fcfbf7] flex items-center gap-2">
+            <div className={`flex items-center justify-between mb-6 pb-2 border-b ${
+              isDark ? 'border-[#d4af37]/20' : 'border-[#e7e4dc]'
+            }`}>
+              <h2 className={`font-serif text-xl sm:text-2xl font-bold flex items-center gap-2 ${
+                isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'
+              }`}>
                 <span>{selectedCategoryTab}</span>
-                <span className="text-xs font-mono text-[#8e8b82]">({sortedListings.length} {t('market.items', 'items')})</span>
+                <span className={`text-xs font-mono ${isDark ? 'text-[#8e8b82]' : 'text-[#78716c]'}`}>({sortedListings.length} {t('market.items', 'items')})</span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
-              {sortedListings.map((prod) => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4">
+              {(isSingleCategoryExpanded ? sortedListings : sortedListings.slice(0, 4)).map((prod) => (
                 <ProductCard
                   key={prod.id}
                   produce={prod}
@@ -802,11 +887,38 @@ export const ProduceMarketplace: React.FC = () => {
                 />
               ))}
             </div>
+
+            {sortedListings.length > 4 && (
+              <div className="pt-4 flex justify-center">
+                <button
+                  type="button"
+                  id="view-more-single-cat-btn"
+                  onClick={() => setIsSingleCategoryExpanded((prev) => !prev)}
+                  className={`group inline-flex items-center justify-center gap-2 py-2 px-5 rounded-xl border text-xs font-mono font-semibold transition-all duration-200 cursor-pointer shadow-xs ${
+                    isDark
+                      ? 'bg-[#14120c]/80 hover:bg-[#d4af37]/15 border-[#d4af37]/35 hover:border-[#d4af37] text-[#fae69e]'
+                      : 'bg-white hover:bg-[#faf8f4] border-[#d4af37]/45 hover:border-[#b89120] text-[#8f6208]'
+                  }`}
+                >
+                  {isSingleCategoryExpanded ? (
+                    <>
+                      <span>{t('farmer.showLess', 'Show Less')}</span>
+                      <ChevronUp className="w-3.5 h-3.5 text-[#d4af37]" />
+                    </>
+                  ) : (
+                    <>
+                      <span>{t('farmer.viewMoreItems', 'View More Items')} ({sortedListings.length - 4} more)</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#d4af37]" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* PART 10 & 12: EXPLORE FARMERS ACROSS INDIA MAP SECTION */}
-        <section className="pt-8 border-t border-[#d4af37]/20">
+        <section className={`pt-8 border-t ${isDark ? 'border-[#d4af37]/20' : 'border-[#e7e4dc]'}`}>
           <GoogleFarmMap
             onSelectFarmer={(farmerName) => {
               const prod = listings.find((l) => l.farmerName.toLowerCase().includes(farmerName.toLowerCase().split(' ')[0]));
@@ -821,23 +933,25 @@ export const ProduceMarketplace: React.FC = () => {
       {/* MOBILE FILTER & SORT DRAWER */}
       <AnimatePresence>
         {isMobileFilterOpen && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:hidden">
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:hidden">
             <motion.div
               initial={{ y: '100%' }}
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full bg-[#12100c] border-t-2 border-[#d4af37]/50 rounded-t-3xl p-5 space-y-5 max-h-[85vh] overflow-y-auto"
+              className={`w-full border-t-2 rounded-t-3xl p-5 space-y-5 max-h-[85vh] overflow-y-auto shadow-2xl ${
+                isDark ? 'bg-[#12100c] border-[#d4af37]/50 text-[#fcfbf7]' : 'bg-white border-[#e7e4dc] text-[#1c1917]'
+              }`}
             >
-              <div className="flex items-center justify-between pb-3 border-b border-[#d4af37]/20">
-                <h3 className="font-serif text-lg font-bold text-[#fcfbf7] flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#d4af37]" />
+              <div className={`flex items-center justify-between pb-3 border-b ${isDark ? 'border-[#d4af37]/20' : 'border-[#e7e4dc]'}`}>
+                <h3 className={`font-serif text-lg font-bold flex items-center gap-2 ${isDark ? 'text-[#fcfbf7]' : 'text-[#1c1917]'}`}>
+                  <SlidersHorizontal className={`w-4 h-4 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
                   <span>{t('market.filterAndSort', 'Filter & Sort')}</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="p-1 rounded-full text-[#aba79c] hover:text-[#fcfbf7]"
+                  className={`p-1 rounded-full ${isDark ? 'text-[#aba79c] hover:text-[#fcfbf7]' : 'text-[#78716c] hover:text-[#1c1917]'}`}
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -845,7 +959,7 @@ export const ProduceMarketplace: React.FC = () => {
 
               {/* Sort By */}
               <div className="space-y-2">
-                <label className="text-xs font-mono uppercase text-[#d4af37] font-semibold block">
+                <label className={`text-xs font-mono uppercase font-semibold block ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`}>
                   {t('market.sortBy', 'Sort By')}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -859,10 +973,14 @@ export const ProduceMarketplace: React.FC = () => {
                       key={s.id}
                       type="button"
                       onClick={() => setSortBy(s.id as any)}
-                      className={`p-2.5 rounded-xl text-xs font-sans text-left border ${
+                      className={`p-2.5 rounded-xl text-xs font-sans text-left border cursor-pointer ${
                         sortBy === s.id
-                          ? 'bg-[#241c0e] border-[#d4af37] text-[#fae69e] font-bold'
-                          : 'bg-[#18150e] border-[#d4af37]/20 text-[#8e8b82]'
+                          ? isDark
+                            ? 'bg-[#241c0e] border-[#d4af37] text-[#fae69e] font-bold'
+                            : 'bg-[#fbf9f4] border-[#b89120] text-[#8f6208] font-bold shadow-xs'
+                          : isDark
+                          ? 'bg-[#18150e] border-[#d4af37]/20 text-[#8e8b82]'
+                          : 'bg-white border-[#e7e4dc] text-[#57534e]'
                       }`}
                     >
                       {s.label}
@@ -873,22 +991,30 @@ export const ProduceMarketplace: React.FC = () => {
 
               {/* Availability Filter */}
               <div className="space-y-2">
-                <label className="text-xs font-mono uppercase text-[#d4af37] font-semibold block">
+                <label className={`text-xs font-mono uppercase font-semibold block ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`}>
                   {t('market.availability', 'Availability')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setInStockOnly(!inStockOnly)}
-                  className={`w-full p-3 rounded-xl border text-xs font-mono flex items-center justify-between ${
+                  className={`w-full p-3 rounded-xl border text-xs font-mono flex items-center justify-between cursor-pointer ${
                     inStockOnly
-                      ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e]'
-                      : 'bg-[#18150e] border-[#d4af37]/20 text-[#8e8b82]'
+                      ? isDark
+                        ? 'bg-[#221c10] border-[#d4af37] text-[#fae69e]'
+                        : 'bg-[#fbf9f4] border-[#b89120] text-[#8f6208] shadow-xs'
+                      : isDark
+                      ? 'bg-[#18150e] border-[#d4af37]/20 text-[#8e8b82]'
+                      : 'bg-white border-[#e7e4dc] text-[#57534e]'
                   }`}
                 >
                   <span>{t('market.inStockOnly', 'Show In-Stock Only')}</span>
                   <div
                     className={`w-4 h-4 rounded-md border flex items-center justify-center ${
-                      inStockOnly ? 'bg-[#d4af37] border-[#fae69e]' : 'border-[#8e8b82]'
+                      inStockOnly
+                        ? 'bg-[#d4af37] border-[#fae69e]'
+                        : isDark
+                        ? 'border-[#8e8b82]'
+                        : 'border-[#a8a29e]'
                     }`}
                   >
                     {inStockOnly && <Check className="w-3 h-3 text-[#0a0a0a]" />}
@@ -906,14 +1032,16 @@ export const ProduceMarketplace: React.FC = () => {
                     setSelectedCategoryTab('ALL');
                     setIsMobileFilterOpen(false);
                   }}
-                  className="flex-1 py-3 rounded-xl bg-[#1c180e] border border-[#d4af37]/40 text-xs font-mono text-[#aba79c]"
+                  className={`flex-1 py-3 rounded-xl border text-xs font-mono cursor-pointer ${
+                    isDark ? 'bg-[#1c180e] border-[#d4af37]/40 text-[#aba79c]' : 'bg-[#faf8f5] border-[#e7e4dc] text-[#57534e]'
+                  }`}
                 >
                   {t('market.reset', 'Reset')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsMobileFilterOpen(false)}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#fae69e] to-[#d4af37] text-[#0a0a0a] font-serif font-bold text-xs uppercase"
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] font-serif font-bold text-xs uppercase cursor-pointer shadow-sm"
                 >
                   {t('market.apply', 'Apply Filters')}
                 </button>
@@ -929,24 +1057,8 @@ export const ProduceMarketplace: React.FC = () => {
           produce={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onFarmerClick={(farmerName) => {
-            const farmerSlug = farmerName.toLowerCase().includes('ravi')
-              ? 'ravi-kumar'
-              : farmerName.toLowerCase().includes('lakshmi')
-              ? 'lakshmi-devi'
-              : 'suresh-naidu';
-
-            setSelectedFarmer({
-              id: farmerSlug,
-              name: farmerName,
-              farmerId: selectedProduct.farmerId || 'AV-FARM-1001',
-              role: 'Verified Direct Grower',
-              location: selectedProduct.farmLocation,
-              experience: '12+ Years Natural Cultivation',
-              specialty: selectedProduct.category,
-              acreage: '8 Acres Heritage Soil',
-              initials: farmerName.split(' ').map((n) => n[0]).join(''),
-              highlightBadge: 'Direct Producer',
-            });
+            const farmerData = findFarmerByListingOrName(farmerName, selectedProduct.farmerId);
+            setSelectedFarmer(farmerData);
           }}
         />
       )}
@@ -992,37 +1104,56 @@ const ProductCard: React.FC<ProductCardProps> = ({
   stats,
 }) => {
   const { language } = useLanguage();
+  const { isDark } = useTheme();
   const isSoldOut = produce.status === 'Sold Out' || produce.quantity <= 0;
 
   return (
     <div
       onClick={onOpenDetail}
-      className="group relative rounded-2xl sm:rounded-3xl bg-[#0e0d0b]/90 border border-[#d4af37]/25 hover:border-[#d4af37]/75 backdrop-blur-md transition-all duration-300 shadow-[0_0_20px_-8px_rgba(212,175,55,0.15)] hover:shadow-[0_0_35px_-5px_rgba(212,175,55,0.35)] flex flex-col justify-between overflow-hidden cursor-pointer hover:-translate-y-1"
+      className={`group relative rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer hover:-translate-y-1 ${
+        isDark
+          ? 'bg-[#0e0d0b]/90 border-[#d4af37]/25 hover:border-[#d4af37]/70 shadow-md hover:shadow-[0_0_25px_-5px_rgba(212,175,55,0.3)]'
+          : 'bg-white border-[#e7e4dc] hover:border-[#b89120] shadow-sm hover:shadow-xl hover:shadow-black/5'
+      }`}
     >
       {/* Product Image */}
-      <div className="relative h-36 sm:h-48 w-full overflow-hidden bg-[#16130e]">
-        <img
+      <div className={`relative h-32 sm:h-36 md:h-40 w-full overflow-hidden ${
+        isDark ? 'bg-[#16130e]' : 'bg-[#f4efe6]'
+      }`}>
+        <ProductImage
           src={imageSrc}
           alt={produce.name}
+          productName={getLocalizedProduceName(produce.name, language)}
+          category={produce.category}
+          size="md"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0b] via-transparent to-transparent opacity-80" />
+        {isDark && (
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0e0d0b] via-transparent to-transparent opacity-80 pointer-events-none" />
+        )}
 
         {/* Category Pill Tag */}
-        <div className="absolute top-2 sm:top-3 left-2 sm:left-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/80 backdrop-blur-md border border-[#d4af37]/40 text-[9px] sm:text-[10px] font-mono text-[#fae69e] uppercase font-semibold shadow-md">
+        <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full backdrop-blur-md border text-[8px] sm:text-[9px] font-mono uppercase font-semibold shadow-xs ${
+          isDark
+            ? 'bg-black/80 border-[#d4af37]/40 text-[#fae69e]'
+            : 'bg-white/95 border-[#e7e4dc] text-[#8f6208]'
+        }`}>
           {getLocalizedCategory(produce.category, language)}
         </div>
 
         {/* Stock Status Pill */}
-        <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
+        <div className="absolute top-2 right-2">
           {isSoldOut ? (
-            <span className="px-2 py-0.5 rounded-full bg-[#2a1010]/90 border border-[#f87171]/50 text-[9px] sm:text-[10px] font-mono font-bold text-[#f87171] uppercase">
+            <span className={`px-2 py-0.5 rounded-full border text-[8px] sm:text-[9px] font-mono font-bold uppercase ${
+              isDark ? 'bg-[#2a1010]/90 border-[#f87171]/50 text-[#f87171]' : 'bg-[#fef2f2] border-[#fecaca] text-[#dc2626]'
+            }`}>
               {t('market.soldOut', 'Sold Out')}
             </span>
           ) : (
-            <span className="px-2 py-0.5 rounded-full bg-[#102414]/90 border border-[#34d399]/50 text-[9px] sm:text-[10px] font-mono font-bold text-[#34d399] uppercase flex items-center gap-1 shadow-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
+            <span className={`px-2 py-0.5 rounded-full border text-[8px] sm:text-[9px] font-mono font-bold uppercase flex items-center gap-1 shadow-xs ${
+              isDark ? 'bg-[#102414]/90 border-[#34d399]/50 text-[#34d399]' : 'bg-[#f0fdf4] border-[#86efac] text-[#166534]'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isDark ? 'bg-[#34d399]' : 'bg-[#16a34a]'}`} />
               <span>{t('market.inStock', 'In Stock')}</span>
             </span>
           )}
@@ -1030,65 +1161,83 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Product Content Details */}
-      <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+      <div className="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between space-y-2.5">
         <div>
           {/* Crop Name */}
-          <h3 className="font-serif text-sm sm:text-base md:text-lg font-bold text-[#fcfbf7] group-hover:text-[#fae69e] transition-colors line-clamp-1">
+          <h3 className={`font-serif text-xs sm:text-sm md:text-base font-bold transition-colors line-clamp-1 ${
+            isDark ? 'text-[#fcfbf7] group-hover:text-[#fae69e]' : 'text-[#1c1917] group-hover:text-[#8f6208]'
+          }`}>
             {getLocalizedProduceName(produce.name, language)}
           </h3>
 
           {/* Farmer Name, Location & Real Farmer ID */}
           <div
             onClick={onOpenFarmer}
-            className="mt-1 flex items-center justify-between text-[11px] sm:text-xs text-[#aba79c] hover:text-[#fae69e] transition-colors cursor-pointer"
+            className={`mt-1 flex items-center justify-between text-[10px] sm:text-xs transition-colors cursor-pointer ${
+              isDark ? 'text-[#aba79c] hover:text-[#fae69e]' : 'text-[#78716c] hover:text-[#8f6208]'
+            }`}
             title="View verified farmer profile"
           >
             <span className="line-clamp-1 font-medium flex items-center gap-1">
-              <span>👨🌾</span>
-              <span>{produce.farmerName}</span>
+              <span>👨‍🌾</span>
+              <span className="truncate">{produce.farmerName}</span>
             </span>
             {produce.farmerId && (
-              <span className="text-[9px] sm:text-[10px] font-mono font-bold text-[#fae69e] bg-[#1c180e] px-1.5 py-0.2 rounded border border-[#d4af37]/35 shrink-0 ml-1">
+              <span className={`text-[8px] sm:text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border shrink-0 ml-1 ${
+                isDark
+                  ? 'text-[#fae69e] bg-[#1c180e] border-[#d4af37]/35'
+                  : 'text-[#8f6208] bg-[#fbf9f4] border-[#d4af37]/40'
+              }`}>
                 {produce.farmerId}
               </span>
             )}
           </div>
 
           {/* Location line */}
-          <div className="text-[10px] font-mono text-[#8e8b82] flex items-center gap-1 mt-0.5">
-            <MapPin className="w-3 h-3 text-[#d4af37] shrink-0" />
+          <div className={`text-[9px] sm:text-[10px] font-mono flex items-center gap-1 mt-0.5 ${
+            isDark ? 'text-[#8e8b82]' : 'text-[#78716c]'
+          }`}>
+            <MapPin className={`w-2.5 h-2.5 shrink-0 ${isDark ? 'text-[#d4af37]' : 'text-[#8f6208]'}`} />
             <span className="truncate">{produce.farmLocation || 'Mandya, Karnataka'}</span>
           </div>
 
           {/* Rating (ONLY if real reviews exist) */}
           {stats.totalCount > 0 && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-mono text-[#fae69e]">
+            <div className={`mt-1 flex items-center gap-1 text-[10px] sm:text-[11px] font-mono ${
+              isDark ? 'text-[#fae69e]' : 'text-[#8f6208]'
+            }`}>
               <span>★ {stats.average.toFixed(1)}</span>
-              <span className="text-[10px] text-[#736f66]">({stats.totalCount})</span>
+              <span className={`text-[9px] ${isDark ? 'text-[#736f66]' : 'text-[#a8a29e]'}`}>({stats.totalCount})</span>
             </div>
           )}
         </div>
 
         {/* Pricing & Stock Details */}
-        <div className="pt-2 sm:pt-3 border-t border-[#d4af37]/15">
+        <div className={`pt-2 border-t ${isDark ? 'border-[#d4af37]/15' : 'border-[#e7e4dc]'}`}>
           <div className="flex items-baseline justify-between gap-1 mb-1">
             <div className="flex items-baseline gap-1">
-              <span className="font-serif text-base sm:text-xl font-bold text-[#fae69e]">
+              <span className={`font-serif text-base sm:text-lg md:text-xl font-bold ${
+                isDark ? 'text-[#fae69e]' : 'text-[#8f6208]'
+              }`}>
                 ₹{produce.pricePerUnit}
               </span>
-              <span className="text-[10px] sm:text-xs font-mono text-[#8e8b82]">/{getLocalizedUnit(produce.unit, language)}</span>
+              <span className={`text-[9px] sm:text-[10px] font-mono ${isDark ? 'text-[#8e8b82]' : 'text-[#78716c]'}`}>/{getLocalizedUnit(produce.unit, language)}</span>
             </div>
-            <span className="text-[10px] font-mono text-[#8e8b82]">
-              {t('market.available', 'Available')}: <strong className="text-[#f5f3eb]">{produce.quantity} {getLocalizedUnit(produce.unit, language)}</strong>
+            <span className={`text-[9px] sm:text-[10px] font-mono ${isDark ? 'text-[#8e8b82]' : 'text-[#78716c]'}`}>
+              {t('market.available', 'Available')}: <strong className={isDark ? 'text-[#f5f3eb]' : 'text-[#1c1917]'}>{produce.quantity} {getLocalizedUnit(produce.unit, language)}</strong>
             </span>
           </div>
 
           {/* Dual Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 mt-2">
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-1.5">
             <button
               type="button"
               onClick={onOpenDetail}
-              className="py-2.5 px-2 rounded-xl bg-[#14120e] hover:bg-[#201c10] border border-[#d4af37]/40 text-[10px] sm:text-xs font-mono font-bold text-[#fae69e] hover:text-white transition-all cursor-pointer text-center active:scale-95"
+              className={`py-1.5 sm:py-2 px-1 rounded-lg sm:rounded-xl border text-[9px] sm:text-[11px] font-mono font-bold transition-all cursor-pointer text-center active:scale-95 ${
+                isDark
+                  ? 'bg-[#14120e] hover:bg-[#201c10] border-[#d4af37]/40 text-[#fae69e] hover:text-white'
+                  : 'bg-white hover:bg-[#faf8f5] border-[#d4af37]/45 text-[#8f6208] hover:text-[#1c1917] shadow-xs'
+              }`}
             >
               {t('market.viewDetails', 'Details')}
             </button>
@@ -1097,7 +1246,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               type="button"
               onClick={onAddToCart}
               disabled={isSoldOut}
-              className={`py-2.5 px-2 rounded-xl font-serif font-bold text-[10px] sm:text-xs uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`py-1.5 sm:py-2 px-1 rounded-lg sm:rounded-xl font-serif font-bold text-[9px] sm:text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md disabled:opacity-40 disabled:cursor-not-allowed ${
                 isAdded
                   ? 'bg-[#10b981] text-white'
                   : 'bg-gradient-to-r from-[#fae69e] via-[#d4af37] to-[#b89120] text-[#0a0a0a] hover:brightness-110 active:scale-95'
@@ -1105,12 +1254,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
             >
               {isAdded ? (
                 <>
-                  <Check className="w-3.5 h-3.5" />
+                  <Check className="w-3 h-3" />
                   <span>{t('cart.added', 'Added')}</span>
                 </>
               ) : (
                 <>
-                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <ShoppingBag className="w-3 h-3" />
                   <span>{t('market.addToCart', 'Add')}</span>
                 </>
               )}

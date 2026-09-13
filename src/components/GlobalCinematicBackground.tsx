@@ -1,106 +1,75 @@
 import React from 'react';
-import { CinematicAVFlame } from './CinematicAVFlame';
+import { useTheme } from '../context/ThemeContext';
 
 /**
  * GlobalCinematicBackground
  * 
- * Renders the official AV (Auric Vista / Auric Arohi) luxury gold emblem as a FIXED,
- * viewport-centered, non-scrolling global background behind all website content.
- * 
- * Features:
- * - Fixed to viewport (does not scroll with page content)
- * - Proportions perfectly preserved (aspect-[404/456], object-contain)
- * - Deep metallic gold edges with 4K clarity
- * - Procedural flowing liquid gold + soft white flame effect flowing through the letter strokes
- * - Bright white-hot highlights and organic, elegant flame motion
- * - Masked 100% strictly to the AV contours so flames never bleed outside
- * - Surrounding background remains deep black/charcoal with subtle heat radiance
- * - Periodic smooth specular shimmer gliding along the curves
- * - Zero click/scroll interference (pointer-events: none, select-none)
+ * Premium Agricultural Atmosphere Background System for Auric Arohi:
+ * - 100% free of large logos, AV watermarks, or distracting flame animations.
+ * - Subtly blends rich dark charcoal, warm loam soil undertones, and dawn-horizon golden glow.
+ * - Supports Dark and Light themes natively with soft agrarian topography textures.
+ * - Ensures product cards, listings, and text remain crisp and 100% readable.
  */
 export const GlobalCinematicBackground: React.FC = () => {
+  const { isDark } = useTheme();
+
   return (
     <div
       id="auric-arohi-global-fixed-bg"
       aria-hidden="true"
-      className="fixed inset-0 pointer-events-none select-none z-0 overflow-hidden flex items-center justify-center"
-      style={{ pointerEvents: 'none' }}
+      className="fixed inset-0 pointer-events-none select-none z-0 overflow-hidden"
     >
-      {/* 1. Deepest Background: Darkest Pure Charcoal/Black Ambient Canvas */}
-      <div className="absolute inset-0 bg-[#030303] -z-30" />
+      {isDark ? (
+        /* ================= DARK MODE AGRICULTURAL CANVAS ================= */
+        <div className="absolute inset-0 transition-opacity duration-700">
+          {/* 1. Deepest Base Canvas: Warm Dark Charcoal / Rich Loam Soil Tone */}
+          <div className="absolute inset-0 bg-[#080706]" />
 
-      {/* 2. Ambient Vignette Radial Falloff (Deep pure dark at edges, subtle warm glow at center) */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(22,18,11,0.55)_0%,rgba(6,5,4,0.92)_55%,#020202_100%)] -z-20" />
+          {/* 2. Subtle Natural Soil & Forest Depth (Earth tones, not flat black) */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgba(38,28,16,0.5)_0%,rgba(16,20,15,0.3)_45%,transparent_80%)]" />
 
-      {/* 3. Soft Breathing Golden Heat Aura behind the AV Emblem */}
-      <div className="absolute w-[60vw] max-w-[420px] aspect-[404/456] rounded-full bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.22)_0%,rgba(180,135,15,0.08)_45%,transparent_70%)] animate-av-halo-breathe blur-3xl pointer-events-none -z-10" />
+          {/* 3. Soft Horizon Dawn Glow (Faint golden-hour light filtering down from top) */}
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[90vw] max-w-[1200px] h-[550px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.08)_0%,rgba(180,135,15,0.02)_50%,transparent_75%)] blur-3xl pointer-events-none" />
 
-      {/* 4. Centered Proportional AV Emblem Container (Living Gold + White Flame) */}
-      <div className="relative w-[52vw] max-w-[190px] sm:max-w-[240px] md:max-w-[290px] lg:max-w-[330px] xl:max-w-[360px] aspect-[404/456] opacity-[0.88] sm:opacity-[0.92] transition-opacity duration-700">
-        
-        {/* Layer A: Base AV Emblem Image (Provides deep metallic gold edges, bevels, 3D grain) */}
-        <img
-          src="/assets/brand/av-emblem-transparent.png"
-          alt=""
-          className="w-full h-full object-contain filter drop-shadow-[0_0_18px_rgba(250,230,158,0.7)] drop-shadow-[0_0_40px_rgba(212,175,55,0.45)] brightness-105 contrast-115"
-          loading="eager"
-          decoding="async"
-        />
+          {/* 4. Very Subtle Agrarian Contour Pattern (Terraced Farm Field Lines) */}
+          <div
+            className="absolute inset-0 opacity-[0.025] pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(circle at 50% 50%, #d4af37 1px, transparent 1px),
+                                linear-gradient(0deg, transparent 95%, rgba(212, 175, 55, 0.2) 100%)`,
+              backgroundSize: '48px 48px, 100% 72px',
+            }}
+          />
 
-        {/* Layer B: Procedural Gold + Soft White Liquid Flame (Masked 100% inside the AV letter contours) */}
-        <div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{
-            WebkitMaskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            maskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-            mixBlendMode: 'screen',
-          }}
-        >
-          <CinematicAVFlame className="opacity-80" />
+          {/* 5. Edge Vignette (Keeps focus crisp on content) */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(6,5,4,0.6)_100%)]" />
         </div>
+      ) : (
+        /* ================= LIGHT MODE AGRICULTURAL CANVAS ================= */
+        <div className="absolute inset-0 transition-opacity duration-700">
+          {/* 1. Base Canvas: Clean Premium White / Very Light Warm-White */}
+          <div className="absolute inset-0 bg-[#ffffff]" />
 
-        {/* Layer C: White-Hot Core Highlights (Color-Dodge for luminous fiery heat) */}
-        <div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{
-            WebkitMaskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            maskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-            mixBlendMode: 'color-dodge',
-          }}
-        >
-          <CinematicAVFlame className="opacity-40 filter brightness-125" />
-        </div>
+          {/* 2. Soft Sunlit Earth Undertone (Warm cream & golden grain) */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_50%_at_50%_0%,rgba(253,250,245,0.95)_0%,rgba(250,248,243,0.7)_50%,#ffffff_100%)]" />
 
-        {/* Layer D: Travelling Metallic Specular Shimmer (Soft periodic glint following curves) */}
-        <div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
-          style={{
-            WebkitMaskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            maskImage: 'url(/assets/brand/av-emblem-transparent.png)',
-            WebkitMaskSize: 'contain',
-            maskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            maskRepeat: 'no-repeat',
-            WebkitMaskPosition: 'center',
-            maskPosition: 'center',
-          }}
-        >
-          {/* Animated light beam reflecting across polished gold */}
-          <div className="absolute inset-0 w-full h-full animate-av-metallic-shine" />
+          {/* 3. Morning Sun Flare Glow */}
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[90vw] max-w-[1100px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(212,175,55,0.08)_0%,rgba(245,158,11,0.02)_50%,transparent_75%)] blur-3xl pointer-events-none" />
+
+          {/* 4. Very Subtle Light Organic Grid */}
+          <div
+            className="absolute inset-0 opacity-[0.02] pointer-events-none"
+            style={{
+              backgroundImage: `linear-gradient(to right, rgba(184, 134, 11, 0.12) 1px, transparent 1px),
+                                linear-gradient(to bottom, rgba(184, 134, 11, 0.12) 1px, transparent 1px)`,
+              backgroundSize: '48px 48px',
+            }}
+          />
+
+          {/* 5. Clean Edge Falloff */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_65%,rgba(245,242,236,0.3)_100%)]" />
         </div>
-      </div>
+      )}
     </div>
   );
 };

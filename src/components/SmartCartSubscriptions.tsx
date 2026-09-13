@@ -72,7 +72,7 @@ export const SmartCartSubscriptions: React.FC = () => {
   return (
     <section
       id="smart-cart-section"
-      className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 bg-[#070707] border-t border-[#d4af37]/15 overflow-hidden"
+      className="relative py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-transparent border-t border-[#d4af37]/15 overflow-hidden"
     >
       {/* Background ambient lighting */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden select-none" aria-hidden="true">

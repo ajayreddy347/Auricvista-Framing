@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <!-- Deep obsidian-charcoal radial background -->
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="65%" fx="50%" fy="45%">
+      <stop offset="0%" stop-color="#19150f"/>
+      <stop offset="60%" stop-color="#0e0c08"/>
+      <stop offset="100%" stop-color="#050504"/>
+    </radialGradient>
+
+    <!-- Metallic Gold linear gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fae69e"/>
+      <stop offset="55%" stop-color="#d4af37"/>
+      <stop offset="85%" stop-color="#9b7617"/>
+      <stop offset="100%" stop-color="#fae69e"/>
+    </linearGradient>
+
+    <!-- Soft ambient gold aura filter -->
+    <filter id="goldGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="800" height="800" fill="url(#bgGrad)"/>
+
+  <!-- Outer subtle corner frame accents -->
+  <rect x="28" y="28" width="744" height="744" fill="none" stroke="#d4af37" stroke-width="1" stroke-opacity="0.12" rx="24"/>
+  <rect x="40" y="40" width="720" height="720" fill="none" stroke="#d4af37" stroke-width="0.75" stroke-opacity="0.08" rx="20"/>
+
+  <!-- Concentric decorative geometric guidelines -->
+  <circle cx="400" cy="360" r="230" fill="none" stroke="#d4af37" stroke-width="0.75" stroke-opacity="0.15"/>
+  <circle cx="400" cy="360" r="180" fill="none" stroke="#d4af37" stroke-width="1.25" stroke-dasharray="4,8" stroke-opacity="0.25"/>
+  <circle cx="400" cy="360" r="130" fill="#14110b" stroke="url(#goldGrad)" stroke-width="1.5" stroke-opacity="0.5"/>
+
+  <!-- Central Botanical Sprout / Wheat Crest -->
+  <g transform="translate(400, 360) scale(1.4)" filter="url(#goldGlow)">
+    <!-- Central Stem -->
+    <path d="M0 50 L0 -45" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Left foliage / grains -->
+    <path d="M0 -28 C-16 -32 -22 -18 0 -12" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M0 -8 C-20 -12 -26 6 0 8" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M0 14 C-20 10 -26 28 0 30" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Right foliage / grains -->
+    <path d="M0 -28 C16 -32 22 -18 0 -12" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M0 -8 C20 -12 26 6 0 8" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M0 14 C20 10 26 28 0 30" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Seed Crown -->
+    <circle cx="0" cy="-50" r="4" fill="#fae69e"/>
+  </g>
+
+  <!-- Typography: Luxury Cormorant / Cinzel Styling -->
+  <text x="400" y="585" text-anchor="middle" font-family="'Cinzel', 'Cormorant Garamond', 'Georgia', serif" font-size="24" font-weight="700" fill="#fae69e" letter-spacing="4">
+    AUTHENTIC PRODUCE
+  </text>
+  
+  <text x="400" y="622" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="13" font-weight="600" fill="#8e8b82" letter-spacing="3">
+    VERIFIED DIRECT FARM HARVEST • PHOTO COMING SOON
+  </text>
+
+  <!-- Metallic Divider -->
+  <path d="M300 648 L500 648" stroke="url(#goldGrad)" stroke-width="1.2" stroke-opacity="0.4"/>
+</svg>

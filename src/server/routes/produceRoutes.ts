@@ -222,11 +222,21 @@ router.put(
 
       const listing = existing.rows[0];
 
-      // Strict Ownership Enforcement: Must match farmer's ID or email (unless admin)
-      const isOwner =
+      // Strict Ownership Enforcement: Must match farmer's ID, farmer_id, email, or name (unless admin)
+      let isOwner =
         authenticatedUser.role === 'admin' ||
         (listing.farmer_id && listing.farmer_id === authenticatedUser.id) ||
-        (listing.farmer_email && listing.farmer_email.toLowerCase() === authenticatedUser.email.toLowerCase());
+        (listing.farmer_email && authenticatedUser.email && listing.farmer_email.toLowerCase() === authenticatedUser.email.toLowerCase()) ||
+        (listing.farmer_name && authenticatedUser.name && listing.farmer_name.toLowerCase() === authenticatedUser.name.toLowerCase());
+
+      if (!isOwner) {
+        const userCheck = await query('SELECT farmer_id FROM users WHERE id = $1', [authenticatedUser.id]);
+        if (userCheck.rows.length > 0 && userCheck.rows[0].farmer_id) {
+          if (listing.farmer_id === userCheck.rows[0].farmer_id) {
+            isOwner = true;
+          }
+        }
+      }
 
       if (!isOwner) {
         return res.status(403).json({
@@ -272,11 +282,21 @@ router.delete(
 
       const listing = existing.rows[0];
 
-      // Strict Ownership Enforcement: Must match farmer's ID or email (unless admin)
-      const isOwner =
+      // Strict Ownership Enforcement: Must match farmer's ID, farmer_id, email, or name (unless admin)
+      let isOwner =
         authenticatedUser.role === 'admin' ||
         (listing.farmer_id && listing.farmer_id === authenticatedUser.id) ||
-        (listing.farmer_email && listing.farmer_email.toLowerCase() === authenticatedUser.email.toLowerCase());
+        (listing.farmer_email && authenticatedUser.email && listing.farmer_email.toLowerCase() === authenticatedUser.email.toLowerCase()) ||
+        (listing.farmer_name && authenticatedUser.name && listing.farmer_name.toLowerCase() === authenticatedUser.name.toLowerCase());
+
+      if (!isOwner) {
+        const userCheck = await query('SELECT farmer_id FROM users WHERE id = $1', [authenticatedUser.id]);
+        if (userCheck.rows.length > 0 && userCheck.rows[0].farmer_id) {
+          if (listing.farmer_id === userCheck.rows[0].farmer_id) {
+            isOwner = true;
+          }
+        }
+      }
 
       if (!isOwner) {
         return res.status(403).json({

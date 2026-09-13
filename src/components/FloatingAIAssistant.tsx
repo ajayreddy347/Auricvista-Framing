@@ -34,6 +34,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getProduceImage } from '../utils/produceImages';
 import { getLocalizedProduceName, getLocalizedCategory, getLocalizedUnit } from '../utils/produceLocalization';
+import { ProductImage } from './ProductImage';
 
 interface Message {
   id: string;
@@ -41,6 +42,8 @@ interface Message {
   text: string;
   timestamp: string;
   recommendedProduce?: ProduceListing[];
+  isError?: boolean;
+  retryQuery?: string;
 }
 
 export const FloatingAIAssistant: React.FC = () => {
@@ -182,8 +185,6 @@ export const FloatingAIAssistant: React.FC = () => {
       },
     ];
   }, [language]);
-
-  // Initial welcome greeting
   useEffect(() => {
     const welcomeGreetings: Record<string, string> = {
       en: '🌾 Welcome to Auric Arohi AI! I can help you discover fresh produce directly from verified Indian farmers, suggest seasonal picks, share cooking tips, or guide your orders.',
@@ -192,16 +193,39 @@ export const FloatingAIAssistant: React.FC = () => {
       te: '🌾 ఆరిక్ ఆరోహి AI సహాయకుడికి స్వాగతం! తాజా పంటల వివరాలు, ధరలు, వంటకాల చిట్కాలు లేదా మీ ఆర్డర్లను ట్రాక్ చేయడానికి నేను సహాయం చేస్తాను.',
       ta: '🌾 ஆரிக் ஆரோஹி AI உதவியாளருக்கு வரவேற்கிறோம்! விவசாயிகளின் புதிய விளைபொருட்களைக் கண்டறியவும், சமையல் குறிப்புகளைப் பெறவும் நான் உதவுகிறேன்.',
       ml: '🌾 ഓറിക് ആരോഹി AI സഹായിയിലേക്ക് സ്വാഗതം! കർഷകരിൽ നിന്ന് പുതിയ വിളകൾ കണ്ടെത്താനും വിലകൾ അറിയാനും ഓർഡറുകൾ പരിശോധിക്കാനും ഞാൻ സഹായിക്കാം.',
+      bn: '🌾 অরিক আরোহী এআই-তে স্বাগতম! আমি আপনাকে যাচাইকৃত কৃষকদের কাছ থেকে তাজা পণ্য খুঁজে পেতে, রান্নার টিপস পেতে বা অর্ডার ট্র্যাক করতে সাহায্য করতে পারি।',
+      mr: '🌾 ऑरिक आरोही एआय मध्ये आपले स्वागत आहे! मी तुम्हाला थेट शेतकऱ्यांकडून ताजी फळे व भाजीपाला शोधण्यात आणि शेती सल्ल्यात मदत करू शकतो.',
+      gu: '🌾 ઑરિક આરોહી AI માં આપનું સ્વાગત છે! હું તમને સીધા ખેડૂતો પાસેથી તાજી ઉપજ શોધવામાં અને રસોઈ કે ખેતી સલાહમાં મદદ કરી શકું છું.',
+      pa: '🌾 ਔਰਿਕ ਆਰੋਹੀ ਏਆਈ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ! ਮੈਂ ਪ੍ਰਮਾਣਿਤ ਕਿਸਾਨਾਂ ਤੋਂ ਤਾਜ਼ੀ ਉਪਜ ਲੱਭਣ ਅਤੇ ਖੇਤੀ ਦੇ ਸੁਝਾਵਾਂ ਵਿੱਚ ਤੁਹਾਡੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ।',
+      or: '🌾 ଅରିକ ଆରୋହୀ AI କୁ ସ୍ୱାଗତ! ମୁଁ ଆପଣଙ୍କୁ ଚାଷୀଙ୍କ ଠାରୁ ସତେଜ ଫସଲ ଖୋଜିବା ଏବଂ ଚାଷ ସମ୍ବନ୍ଧୀୟ ସୂଚନା ପାଇଁ ସାହାଯ୍ୟ କରିପାରିବି।',
+      as: '🌾 অৰিক আৰোহী AI লৈ স্বাগতম! মই আপোনাক কৃষকসকলৰ পৰা সতেজ শাক-পাচলি বিচাৰি পোৱাত আৰু কৃষি পৰামৰ্শত সহায় কৰিব পাৰোঁ।',
+      ur: '🌾 اورک آروہی اے آئی میں خوش آمدید! میں تصدیق شدہ کسانوں سے تازہ فصلیں تلاش کرنے، قیمتیں معلوم کرنے اور کاشتکاری سے متعلق سوالات میں آپ کی مدد کر سکتا ہوں۔',
     };
 
-    setMessages([
-      {
-        id: 'msg-welcome',
-        sender: 'ai',
-        text: welcomeGreetings[language] || welcomeGreetings.en,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      },
-    ]);
+    setMessages((prev) => {
+      // Welcome message appears ONLY when chat is first opened / empty
+      if (prev.length === 0) {
+        return [
+          {
+            id: 'msg-welcome',
+            sender: 'ai',
+            text: welcomeGreetings[language] || welcomeGreetings.en,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ];
+      }
+      // If only the initial welcome message exists, update its translation
+      if (prev.length === 1 && prev[0].id === 'msg-welcome') {
+        return [
+          {
+            ...prev[0],
+            text: welcomeGreetings[language] || welcomeGreetings.en,
+          },
+        ];
+      }
+      // Never repeat or overwrite existing user conversation
+      return prev;
+    });
   }, [language]);
 
   useEffect(() => {
@@ -292,14 +316,39 @@ export const FloatingAIAssistant: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Intelligent real-data query processor
-  const handleProcessQuery = async (queryText: string) => {
-    if (!queryText.trim()) return;
+  // Natural, user-friendly failure message without technical jargon
+  const getFriendlyErrorMessage = (lang: string): string => {
+    switch (lang) {
+      case 'kn':
+        return 'ಈ ಸಮಯದಲ್ಲಿ ಪ್ರತಿಕ್ರಿಯಿಸಲು ಸ್ವಲ್ಪ ಸಮಸ್ಯೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಮತ್ತೊಮ್ಮೆ ಕೇಳಿ.';
+      case 'hi':
+        return 'इस समय उत्तर देने में थोड़ी परेशानी हो रही है। कृपया अपना सवाल दोबारा पूछें।';
+      case 'te':
+        return 'ప్రస్తుతం స్పందించడంలో సమస్య ఉంది. దయచేసి మీ ప్రశ్నను మళ్లీ అడగండి.';
+      case 'ta':
+        return 'தற்போது பதிலளிப்பதில் சிக்கல் ஏற்பட்டுள்ளது. தயவுசெய்து உங்கள் கேள்வியை மீண்டும் கேட்கவும்.';
+      case 'mr':
+        return 'या वेळी प्रतिसाद देण्यात थोडी अडचण येत आहे. कृपया आपला प्रश्न पुन्हा विचारा.';
+      case 'bn':
+        return 'এই মুহূর্তে উত্তর দিতে কিছুটা সমস্যা হচ্ছে। অনুগ্রহ করে আপনার প্রশ্নটি আবার জিজ্ঞাসা করুন।';
+      case 'gu':
+        return 'આ સમયે જવાબ આપવામાં થોડી સમસ્યા આવી રહી છે. કૃપા કરીને તમારો પ્રશ્ન ફરી પૂછો.';
+      case 'ur':
+        return 'اس وقت جواب دینے میں دشواری ہو رہی ہے۔ براہ کرم اپنا سوال دوبارہ پوچھیں۔';
+      default:
+        return "I'm having trouble connecting right now. Please try asking your question again.";
+    }
+  };
 
+  // Intelligent query processor calling unified Auric AI platform backend
+  const handleProcessQuery = async (queryText: string) => {
+    if (!queryText.trim() || loadingStep !== 'idle') return;
+
+    const trimmedQuery = queryText.trim();
     const userMsg: Message = {
       id: `msg-${Date.now()}`,
       sender: 'user',
-      text: queryText.trim(),
+      text: trimmedQuery,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -307,142 +356,88 @@ export const FloatingAIAssistant: React.FC = () => {
     setInputText('');
     setLoadingStep('understanding');
 
-    const q = queryText.toLowerCase().trim();
-
-    setTimeout(() => {
+    let searchTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
       setLoadingStep('searching');
-    }, 400);
+    }, 450);
 
-    setTimeout(() => {
-      setLoadingStep('preparing');
-    }, 800);
+    // Strict 10-second client timeout ensures Auric AI never hangs indefinitely
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 10000);
 
-    setTimeout(() => {
-      let responseText = '';
+    try {
+      const res = await fetch('/api/auric-ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortController.signal,
+        body: JSON.stringify({
+          prompt: trimmedQuery,
+          language,
+          history: messages.slice(-6).map((m) => ({ sender: m.sender, text: m.text })),
+          context: {
+            userRole: userRole || user?.role || 'customer',
+            userName: user?.name,
+            farmerProduce: user?.mainCrops,
+            farmerLocation: user?.location,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Request returned non-200 status: ${res.status}`);
+      }
+
+      const data = await res.json();
       let matchedProduce: ProduceListing[] = [];
 
-      // 1. Vegetables query
-      if (q.includes('veg') || q.includes('ತರಕಾರಿ') || q.includes('सब्जी') || q.includes('கூறுகாய') || q.includes('tomato') || q.includes('potato') || q.includes('onion') || q.includes('carrot') || q.includes('spinach')) {
-        matchedProduce = listings.filter((l) =>
-          l.category.toLowerCase().includes('veg') ||
-          l.name.toLowerCase().includes('tomato') ||
-          l.name.toLowerCase().includes('potato') ||
-          l.name.toLowerCase().includes('onion') ||
-          l.name.toLowerCase().includes('carrot') ||
-          l.name.toLowerCase().includes('spinach')
-        ).slice(0, 4);
-
-        if (language === 'kn') {
-          responseText = `ನಮ್ಮ ಪರಿಶೀಲಿತ ರೈತರಿಂದ ಲಭ್ಯವಿರುವ ಪ್ರಮುಖ ಸಾವಯವ ತರಕಾರಿಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nಇವುಗಳನ್ನು ನೇರವಾಗಿ ರೈತರ ಜಮೀನಿನಿಂದಲೇ ತಲುಪಿಸಲಾಗುತ್ತದೆ.`;
-        } else if (language === 'hi') {
-          responseText = `हमारे सत्यापित भारतीय किसानों से उपलब्ध प्रमुख ताज़ी सब्जियां:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nइन्हें सुबह की ताज़ी कटाई के बाद सीधे आपके पास भेजा जाता है।`;
-        } else {
-          responseText = `Here are the freshest verified farm vegetables currently listed in PostgreSQL:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} from ${p.farmerName} (${p.farmLocation})`).join('\n• ')}**\n\nEach listing is harvested at dawn with zero middleman holding times.`;
-        }
-      }
-      // 2. Fruits query
-      else if (q.includes('fruit') || q.includes('ಹಣ್ಣು') || q.includes('फल') || q.includes('mango') || q.includes('apple') || q.includes('banana') || q.includes('papaya') || q.includes('orange')) {
-        matchedProduce = listings.filter((l) =>
-          l.category.toLowerCase().includes('fruit') ||
-          l.name.toLowerCase().includes('mango') ||
-          l.name.toLowerCase().includes('apple') ||
-          l.name.toLowerCase().includes('banana') ||
-          l.name.toLowerCase().includes('papaya') ||
-          l.name.toLowerCase().includes('orange')
-        ).slice(0, 4);
-
-        if (language === 'kn') {
-          responseText = `ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಲಭ್ಯವಿರುವ ನೈಸರ್ಗಿಕವಾಗಿ ಮಾಗಿದ ತಾಜಾ ಹಣ್ಣುಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit})`).join('\n• ')}**\n\nಯಾವುದೇ ಕೃತಕ ಕಾರ್ಬೈಡ್ ಬಳಸದೆ ನೈಸರ್ಗಿಕವಾಗಿ ಕೊಯ್ಲು ಮಾಡಲಾದ ಹಣ್ಣುಗಳು.`;
-        } else if (language === 'hi') {
-          responseText = `मंडी में उपलब्ध प्राकृतिक रूप से पके ताज़े फल:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit})`).join('\n• ')}**\n\nये फल बिना किसी कृत्रिम रसायन के सीधे बगीचों से तोड़े जाते हैं।`;
-        } else {
-          responseText = `Here are naturally tree-ripened farm fruits available in the marketplace:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} by ${p.farmerName}`).join('\n• ')}**\n\nGuaranteed calcium-carbide free and naturally sun-ripened.`;
-        }
-      }
-      // 3. Spices query
-      else if (q.includes('spice') || q.includes('ಸಾಂಬಾರ') || q.includes('मसाले') || q.includes('turmeric') || q.includes('saffron') || q.includes('pepper') || q.includes('cardamom')) {
-        matchedProduce = listings.filter((l) =>
-          l.category.toLowerCase().includes('spice') ||
-          l.name.toLowerCase().includes('turmeric') ||
-          l.name.toLowerCase().includes('saffron') ||
-          l.name.toLowerCase().includes('pepper') ||
-          l.name.toLowerCase().includes('cardamom')
-        ).slice(0, 4);
-
-        if (language === 'kn') {
-          responseText = `ನಮ್ಮ ಅಧಿಕೃತ ರೈತರಿಂದ ಸಿಗುವ ಪರಿಶುದ್ಧ ಸಾಂಬಾರ ಪದಾರ್ಥಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nಉನ್ನತ ಕರ್ಕ್ಯುಮಿನ್ ಅರಿಶಿನ ಮತ್ತು ಜಿಐ-ಟ್ಯಾಗ್ ಹೊಂದಿದ ಕಾಶ್ಮೀರಿ ಕೇಸರಿ ಲಭ್ಯವಿದೆ.`;
-        } else if (language === 'hi') {
-          responseText = `सत्यापित किसानों से उपलब्ध शुद्ध पारंपरिक मसाले:\n\n• **${matchedProduce.map((p) => `${p.name} (₹${p.pricePerUnit}/${p.unit} - ${p.farmerName})`).join('\n• ')}**\n\nइनमें उच्च-करक्यूमिन हल्दी और शुद्ध कश्मीरी केसर शामिल हैं।`;
-        } else {
-          responseText = `Here are pure single-origin Indian spices from verified growers:\n\n• **${matchedProduce.map((p) => `${p.name} — ₹${p.pricePerUnit}/${p.unit} (${p.farmerName}, ${p.farmLocation})`).join('\n• ')}**\n\nIncludes Salem High-Curcumin Turmeric and GI-Tagged Kashmir Saffron.`;
-        }
-      }
-      // 4. Budget under price query
-      else if (q.includes('150') || q.includes('under') || q.includes('ಬೆಲೆ') || q.includes('कीमत') || q.includes('budget') || q.includes('cheap')) {
-        matchedProduce = listings.filter((l) => l.pricePerUnit <= 150).slice(0, 4);
-
-        if (language === 'kn') {
-          responseText = `₹150 ಒಳಗೆ ಲಭ್ಯವಿರುವ ಅತ್ಯುತ್ತಮ ನೇರ ಕೃಷಿ ಬೆಳೆಗಳು:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit}`).join('\n• ')}**`;
-        } else if (language === 'hi') {
-          responseText = `₹150 से कम कीमत में उपलब्ध उत्तम कृषि उपज:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit}`).join('\n• ')}**`;
-        } else {
-          responseText = `Here are direct farm crops available for under ₹150 per unit:\n\n• **${matchedProduce.map((p) => `${p.name}: ₹${p.pricePerUnit}/${p.unit} (${p.farmerName})`).join('\n• ')}**`;
-        }
-      }
-      // 5. Recipe / Cooking / Storage query
-      else if (q.includes('recipe') || q.includes('cook') || q.includes('ಅಡುಗೆ') || q.includes('व्यंजन') || q.includes('store') || q.includes('ಸಂರಕ್ಷಣೆ')) {
-        if (language === 'kn') {
-          responseText = `🌿 **ತಾಜಾ ಸೊಪ್ಪು ಮತ್ತು ತರಕಾರಿಗಳ ಬಳಕೆ & ಸಂರಕ್ಷಣೆ ಸಲಹೆ:**\n\n1. **ಪಾಲಕ್ ಪನೀರ್ / ದಾಲ್ ಪಾಲಕ್:** ಪಾಲಕ್ ಸೊಪ್ಪನ್ನು ತಣ್ಣೀರಿನಲ್ಲಿ ತೊಳೆದು, ಬಿಸಿನೀರಿನಲ್ಲಿ 2 ನಿಮಿಷ ಬೇಯಿಸಿ ತಣ್ಣೀರಿನಲ್ಲಿ ಇರಿಸಿದರೆ (blanching) ಹಸಿರು ಬಣ್ಣ ಹಾಗೇ ಉಳಿಯುತ್ತದೆ.\n2. **ಸಂರಕ್ಷಣೆ:** ತೇವಾಂಶವಿಲ್ಲದ ಹತ್ತಿ ಬಟ್ಟೆ ಅಥವಾ ಜಿಪ್‌ಲಾಕ್ ಬ್ಯಾಗ್‌ನಲ್ಲಿ ಸಂಗ್ರಹಿಸಿದರೆ 7-10 ದಿನ ತಾಜಾವಾಗಿರುತ್ತದೆ.`;
-        } else if (language === 'hi') {
-          responseText = `🌿 **ताज़ी पालक व सब्जियों के पाक व भंडारण सुझाव:**\n\n1. **पालक पनीर / दाल पालक:** पालक को ब्लांच (2 मिनट गर्म पानी में डालकर तुरंत ठंडे पानी में) करने से इसका हरा रंग और पोषक तत्व बरकरार रहते हैं।\n2. **सुरक्षित भंडारण:** सूती कपड़े या एयरटाइट बॉक्स में रखने पर यह 7-10 दिनों तक एकदम ताज़ा रहती है।`;
-        } else {
-          responseText = `🌿 **Culinary & Farm Fresh Storage Tips:**\n\n1. **Palak Paneer & Dal Palak:** Blanch freshly harvested baby spinach leaves in boiling water for 2 minutes, then immediately plunge into cold ice water to preserve its vibrant green chlorophyll and vitamins.\n2. **Storage Tip:** Store unwashed in a breathable container with a dry cloth in the refrigerator to keep leaves crisp for up to 10 days.`;
-        }
-      }
-      // 6. Track order query
-      else if (q.includes('track') || q.includes('order') || q.includes('ಆರ್ಡರ್') || q.includes('ऑर्डर') || q.includes('status')) {
-        if (language === 'kn') {
-          responseText = `📦 **ಆರ್ಡರ್ ಹಂತಗಳು:**\n1. **Placed** (ಆರ್ಡರ್ ಸ್ವೀಕರಿಸಲಾಗಿದೆ)\n2. **Harvesting** (ಜಮೀನಿನಲ್ಲಿ ತಾಜಾ ಕೊಯ್ಲು)\n3. **Dispatched** (ನೇರ ರವಾನೆ)\n4. **Delivered** (ನಿಮ್ಮ ಮನೆಗೆ ತಲುಪಿದೆ).\n\n👉 ನೀವು ಗ್ರಾಹಕ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಲ್ಲಿ ನೈಜ ಸಮಯದಲ್ಲಿ ಲೈವ್ ಸ್ಥಿತಿಯನ್ನು ವೀಕ್ಷಿಸಬಹುದು.`;
-        } else if (language === 'hi') {
-          responseText = `📦 **ऑर्डर ट्रैकिंग चरण:**\n1. **Placed** (ऑर्डर दर्ज)\n2. **Harvesting** (खेत में ताज़ी कटाई)\n3. **Dispatched** (सीधा प्रेषण)\n4. **Delivered** (घर पर डिलीवरी)।\n\n👉 आप ग्राहक डैशबोर्ड में लाइव स्थिति देख सकते हैं।`;
-        } else {
-          responseText = `📦 **Direct Farm Order Lifecycle:**\n\n1. **Placed** — Order registered with grower\n2. **Harvesting** — Dawn harvest in progress\n3. **Dispatched** — Direct farm logistics transit\n4. **Delivered** — Handed over to your doorstep\n\n👉 You can track every milestone in real time in your Customer Dashboard.`;
-        }
-      }
-      // 7. General fallback
-      else {
-        matchedProduce = listings.filter((l) =>
-          l.name.toLowerCase().includes(q) ||
-          l.category.toLowerCase().includes(q) ||
-          l.farmerName.toLowerCase().includes(q)
-        ).slice(0, 4);
-
-        if (matchedProduce.length > 0) {
-          responseText = language === 'kn'
-            ? `ನಿಮ್ಮ ಪ್ರಶ್ನೆಗೆ ಸೂಕ್ತವಾದ ಬೆಳೆಗಳು ಮಾರುಕಟ್ಟೆಯಲ್ಲಿ ಲಭ್ಯವಿವೆ:`
-            : language === 'hi'
-            ? `आपकी खोज से संबंधित उपलब्ध कृषि उत्पाद:`
-            : `Here are matching produce listings from our verified growers in PostgreSQL:`;
-        } else {
-          responseText = language === 'kn'
-            ? `ಕ್ಷಮಿಸಿ, ನಿಮ್ಮ ಹುಡುಕಾಟಕ್ಕೆ ಸದ್ಯಕ್ಕೆ ಯಾವುದೇ ನೇರ ಬೆಳೆ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ಬೇರೆ ತರಕಾರಿ, ಹಣ್ಣು ಅಥವಾ ಸಾಂಬಾರ ಪದಾರ್ಥಗಳ ಬಗ್ಗೆ ವಿಚಾರಿಸಿ.`
-            : language === 'hi'
-            ? `क्षमा करें, इस समय इससे संबंधित कोई उत्पाद उपलब्ध नहीं है। कृपया ताज़ी सब्जियों या फलों के बारे में पूछें।`
-            : `No matching produce is currently listed for that query. You can explore our other active harvests in the marketplace.`;
-        }
+      if (Array.isArray(data.recommendedProduce) && data.recommendedProduce.length > 0) {
+        matchedProduce = data.recommendedProduce
+          .map((p: any) => {
+            if (!p) return null;
+            const pName = (p.name || '').toLowerCase();
+            const found = (listings || []).find(
+              (l) => l && (l.id === p.id || (l.name && l.name.toLowerCase() === pName))
+            );
+            return found || p;
+          })
+          .filter(Boolean);
       }
 
       const aiMsg: Message = {
         id: `msg-${Date.now()}`,
         sender: 'ai',
-        text: responseText,
+        text: data.reply || getFriendlyErrorMessage(language),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         recommendedProduce: matchedProduce.slice(0, 4),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
+    } catch (err: any) {
+      console.warn('AI assist request encountered an issue or timed out:', err);
+
+      // Safe, natural-language error message without ANY technical words
+      const friendlyError = getFriendlyErrorMessage(language);
+
+      const aiMsg: Message = {
+        id: `msg-${Date.now()}`,
+        sender: 'ai',
+        text: friendlyError,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isError: true,
+        retryQuery: trimmedQuery,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } finally {
+      clearTimeout(timeoutId);
+      if (searchTimer) {
+        clearTimeout(searchTimer);
+        searchTimer = null;
+      }
+      // Guaranteed clearing of loading state on BOTH success and error
       setLoadingStep('idle');
-    }, 900);
+    }
   };
 
   return (
@@ -568,7 +563,12 @@ export const FloatingAIAssistant: React.FC = () => {
                             : 'bg-[#16130e] border border-[#d4af37]/30 text-[#fcfbf7] rounded-tl-none space-y-2.5'
                         }`}
                       >
-                        <div className="whitespace-pre-line text-xs sm:text-[13px]">{msg.text}</div>
+                        <div
+                          className={`whitespace-pre-line text-xs sm:text-[13px] ${language === 'ur' ? 'text-right font-sans' : ''}`}
+                          dir={language === 'ur' ? 'rtl' : 'ltr'}
+                        >
+                          {msg.text}
+                        </div>
 
                         {/* Produce Cards Embedded Inside AI Chat Response */}
                         {msg.recommendedProduce && msg.recommendedProduce.length > 0 && (
@@ -583,11 +583,14 @@ export const FloatingAIAssistant: React.FC = () => {
                                 className="p-2 rounded-xl bg-[#0e0d0a] border border-[#d4af37]/30 hover:border-[#fae69e] transition-all cursor-pointer flex flex-col justify-between space-y-1 group"
                               >
                                 <div className="h-16 rounded-lg overflow-hidden bg-[#18140e]">
-                                  <img
-                                    src={getProduceImage(prod)}
-                                    alt={prod.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                  />
+                                  <ProductImage
+                                     src={getProduceImage(prod)}
+                                     alt={prod.name}
+                                     productName={prod.name}
+                                     category={prod.category}
+                                     size="xs"
+                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                   />
                                 </div>
                                 <div className="font-serif font-bold text-[11px] text-[#fcfbf7] truncate">
                                   {getLocalizedProduceName(prod.name, language)}
@@ -603,19 +606,32 @@ export const FloatingAIAssistant: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Speaker Button on AI Messages */}
+                        {/* Speaker & Retry Controls on AI Messages */}
                         {msg.sender === 'ai' && (
                           <div className="flex items-center justify-between pt-1 border-t border-[#d4af37]/15 text-[10px] font-mono text-[#8e8b82]">
                             <span>{msg.timestamp}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleSpeakText(msg.text)}
-                              className="inline-flex items-center gap-1 text-[#d4af37] hover:text-[#fae69e] p-1 rounded hover:bg-white/5 cursor-pointer"
-                              title="Listen to response"
-                            >
-                              {isSpeaking ? <VolumeX className="w-3.5 h-3.5 text-[#f87171]" /> : <Volume2 className="w-3.5 h-3.5" />}
-                              <span>{isSpeaking ? 'Mute' : 'Listen'}</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {msg.isError && msg.retryQuery && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleProcessQuery(msg.retryQuery!)}
+                                  className="inline-flex items-center gap-1 text-[#fae69e] hover:text-[#d4af37] p-1 rounded hover:bg-white/5 cursor-pointer underline underline-offset-2 transition-colors"
+                                  title="Try again"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Try again</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleSpeakText(msg.text)}
+                                className="inline-flex items-center gap-1 text-[#d4af37] hover:text-[#fae69e] p-1 rounded hover:bg-white/5 cursor-pointer"
+                                title="Listen to response"
+                              >
+                                {isSpeaking ? <VolumeX className="w-3.5 h-3.5 text-[#f87171]" /> : <Volume2 className="w-3.5 h-3.5" />}
+                                <span>{isSpeaking ? 'Mute' : 'Listen'}</span>
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -628,10 +644,10 @@ export const FloatingAIAssistant: React.FC = () => {
                       <Bot className="w-4 h-4 text-[#d4af37] animate-spin" />
                       <span>
                         {loadingStep === 'understanding'
-                          ? 'Understanding Indian agricultural query...'
+                          ? 'Understanding your question...'
                           : loadingStep === 'searching'
-                          ? 'Scanning PostgreSQL harvests & verified farmers...'
-                          : 'Synthesizing verified produce recommendations...'}
+                          ? 'Checking fresh harvests & verified farmers...'
+                          : 'Preparing helpful response...'}
                       </span>
                     </div>
                   )}
