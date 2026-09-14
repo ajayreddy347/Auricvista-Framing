@@ -12,8 +12,10 @@ export function getPool(): pg.Pool {
     const connectionString = process.env.DATABASE_URL;
 
     if (connectionString) {
+      const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
       pool = new Pool({
         connectionString,
+        ssl: isLocalhost ? false : { rejectUnauthorized: false },
         max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
