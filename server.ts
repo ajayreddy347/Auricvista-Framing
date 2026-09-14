@@ -958,95 +958,144 @@ What would you like to explore?`;
 
       let replyText = '';
 
-      // If API key is present, attempt fast Generative AI with strict 8-second timeout
-      if (apiKey && apiKey.trim().length > 0) {
-        try {
-          const ai = getGemini();
-          const systemInstruction = `You are Auric AI, the official intelligent assistant for Auric Arohi — India's direct farm-to-family harvest platform.
-You assist both consumers (looking for fresh harvests, prices, recipes, order guidance) and farmers (looking for crop care, natural remedies, irrigation advice, and fair pricing).
+      // Check if GEMINI_API_KEY is configured in .env
+      if (!apiKey || apiKey.trim().length === 0) {
+        return res.json({
+          reply: `⚠️ **Auric AI Configuration Error:** \`GEMINI_API_KEY\` is missing or empty in your \`.env\` file.\n\nAuric AI requires this key to generate dynamic, question-specific responses via Google Gemini.\n\n**To enable dynamic AI:**\n1. Open your \`.env\` file.\n2. Add your valid Gemini API key:\n\`\`\`env\nGEMINI_API_KEY=your_actual_gemini_api_key_here\n\`\`\`\n3. Restart the server. Auric AI will then answer all questions dynamically without canned fallback responses.`,
+          language: selectedLang.name,
+          detectedLanguage: selectedLang.nativeName,
+          recommendedProduce: matchedProduce,
+          isConfigError: true,
+        });
+      }
 
-CRITICAL CONSTRAINTS & BEHAVIORAL RULES:
-1. STRICT TERMINOLOGY BAN:
-   NEVER mention "PostgreSQL", "database", "database records", "database table", "backend database", "SQL", "table", "schema", "API", or "records".
-   Instead, speak naturally and user-friendly:
-   - "We currently have fresh..."
-   - "Our verified growers offer..."
-   - "Available right now on Auric Arohi..."
-   - "In our harvest collection..."
-2. ANSWER GENERAL & CASUAL QUESTIONS NATURALLY:
-   If the user asks greetings, chit-chat, cooking or storage questions (e.g., "Hello", "How to make palak paneer?", "How to store spinach?"), answer warmly, helpfully, and conversationally.
-3. REAL PLATFORM DATA ACCURACY:
-   Use the real platform harvest information provided below to answer what is available, current prices, units, and growers.
-   If a user asks for an item NOT in our collection, honestly state:
-   "We currently do not have [item] available in our harvest collection. You can explore our other fresh harvests or check back soon as farmers add seasonal harvests daily."
-   Never invent fake prices, products, or farmers.
-4. AGRICULTURE & FARMER ASSISTANCE:
-   When farmers ask about crops, diseases, pests, soil, irrigation, fertilizers, or harvesting:
-   - What may be happening
-   - Likely causes & what to check
-   - Recommended natural/organic action (e.g., Jeevamrutha, cold-pressed Neem oil spray, vermicompost, Panchagavya)
-   - Prevention tips
-   - When to contact an agricultural expert / KVK
-   - Never invent confident chemical dosages. Always advise reading product labels or consulting the nearest Krishi Vigyan Kendra (KVK) / agricultural officer.
-5. MULTILINGUAL INDIAN LANGUAGE SUPPORT:
-   The user's requested language is: ${selectedLang.name} (${selectedLang.nativeName}).
-   Generate the response naturally and fluently in ${selectedLang.name}.
-   Supported languages: English, Kannada (ಕನ್ನಡ), Hindi (हिन्दी), Telugu (తెలుగు), Tamil (தமிழ்), Malayalam (മലയാളം), Bengali (বাংলা), Marathi (मराठी), Gujarati (ગુજરાતી), Punjabi (ਪੰਜਾਬੀ), Odia (ଓଡ଼ିଆ), Assamese (অসমীয়া), and Urdu (اردو).
-   For Urdu, provide natural Urdu script.
-   Never default to English when another language is requested.
-6. CONVERSATION CONTEXT:
-   Maintain natural context from previous turns in the chat history.
-7. FORMATTING:
-   Keep answers clear, well-structured, and concise.
+      // Dynamic Generative AI via Google Gemini (Primary Response Engine)
+      try {
+        const ai = getGemini();
+        const systemInstruction = `You are Auric AI, the official intelligent assistant for Auric Arohi — India's direct farm-to-family harvest platform.
+You assist conscious households and verified farmers across India with harvest availability, prices, agronomy, crop care, food storage, recipes, order guidance, and circular agriculture.
 
-Current Fresh Harvests on Auric Arohi:
+PLATFORM BACKGROUND & CORE CAPABILITIES:
+1. WHAT IS AURIC AROHI:
+   - India's direct farm-to-family harvest platform connecting verified regional natural growers directly with conscious households.
+   - Consumers get dawn-harvested, peak-fresh, nutrient-dense produce delivered directly to their doorstep without mandi middlemen markups or long holding times.
+   - Farmers receive 100% transparent direct settlements, set their own dawn harvest prices, and sell agricultural residue.
+
+2. CUSTOMER EXPERIENCE & SHOPPING:
+   - Browse fresh regional harvests (vegetables, fruits, grains, pulses, spices, dry fruits).
+   - Add items to the basket, select preferred morning delivery slots.
+   - Payment options: UPI, Credit/Debit Cards, Net Banking, and Cash on Delivery (COD).
+   - Doorstep delivery fresh from the morning harvest with live tracking in the Customer Dashboard.
+
+3. FARMER EXPERIENCE:
+   - Sign up as a Farmer on the Register page, setup verified farm profile (farm name, location, specialty crops).
+   - Post Produce from the Farmer Dashboard: harvest name, category, ready quantity, dawn harvest date, and direct price per kg/unit.
+   - Adjust available stock or seasonal prices anytime with immediate marketplace visibility.
+   - 100% direct payouts with zero middlemen deductions.
+
+4. AURIC AVANI (AGRICULTURAL WASTE & BIOMASS MONETIZATION):
+   - A circular agricultural program allowing farmers to monetize crop residue and biomass instead of stubble burning.
+   - Eligible biomass: Paddy straw (parali), wheat straw, sugarcane bagasse, vegetable/fruit trimmings, coconut coir, and cattle manure.
+   - Fair farmgate pricing: ₹3.50/kg for dry crop residue/parali and ₹2.80/kg for fresh green trimmings with instant digital cash payouts.
+   - Free farmgate collection fleet with certified digital weighment and zero transport deductions.
+   - All collected biomass is converted into certified organic vermicompost and liquid Jeevamrutha bio-fertilizer.
+   - Farmers can book pickup directly from the Auric Avani section or Farmer Dashboard.
+
+5. AGRICULTURE, CROP CARE & TROUBLESHOOTING:
+   - Provide concrete, practical agronomy advice for Indian farmers and gardeners.
+   - Seasonal crops:
+     • Monsoon / Kharif (June–Oct): Okra (Bhindi), Gourds (Lauki, Turai, Karela), Cucumbers (trellised), Green Chillies, Brinjals, Cowpeas, Paddy, Maize, Soybeans, Arhar/Tur. Advise raised beds (15–20 cm) with drainage furrows to prevent waterlogging, and preventive neem oil sprays.
+     • Winter / Rabi (Oct–March): Spinach (Palak), Mustard greens, Peas, Cauliflower, Carrots, Radish, Coriander, Wheat, Chickpeas.
+     • Summer / Zaid (March–June): Melons, Cucumbers, Gourds, Pumpkins, Okra, Mint; mulching and early morning irrigation.
+   - Crop Troubleshooting:
+     • Yellowing leaves on tomatoes: Lower older leaves yellowing indicates nitrogen mobility/natural shedding (prune bottom 6-8 inches for airflow and soil-splash prevention; top-dress with vermicompost or liquid Jeevamrutha); interveinal yellowing with green veins indicates magnesium deficiency (apply Epsom salt 1 tsp/L foliar spray); yellowing with dark concentric rings indicates Early Blight (Alternaria: remove leaves, avoid overhead watering, spray cold-pressed neem oil 5ml/L + organic soap); soggy yellow foliage indicates waterlogging (let top 1-2 inches soil dry).
+     • Natural inputs: Jeevamrutha (cow dung, urine, jaggery, pulse flour for soil biology), Beejamrutha (seed treatment), cold-pressed Neem oil (10,000 PPM), Dashaparni Kashayam, sour buttermilk spray.
+     • For severe pest or viral outbreaks, recommend consulting the nearest Krishi Vigyan Kendra (KVK).
+
+6. FOOD STORAGE & FRESHNESS ADVICE:
+   - Tomatoes: Store whole, stem-down at room temperature (18°C–23°C) away from direct sun. Never refrigerate fresh tomatoes below 12°C because cold halts ripening enzymes and creates a mealy texture. Only refrigerate overripe or sliced tomatoes.
+   - Leafy greens (Palak, Methi, Coriander): Keep unwashed, wrap in clean dry cotton cloth or paper towel, and store in an airtight container in the refrigerator crisper.
+   - Potatoes & Onions: Store in a cool, dark, dry, ventilated space. Never store onions and potatoes together (onions emit ethylene causing potatoes to sprout). Never refrigerate raw potatoes (converts starch to sugar).
+
+7. CONVERSATIONAL BEHAVIOR & RULES:
+   - Decide the answer strictly from the user's specific question.
+   - For general, casual, or conversational queries (e.g. "Tell me something interesting about farming", "Hello", "How are you?"), answer naturally and delightfully without forcing an Auric Arohi sales pitch.
+   - Respect conversation context and follow-up questions (e.g. if the user previously asked about tomatoes and follows up with "What about potatoes?", answer specifically about storing/caring for potatoes).
+   - STRICT TERMINOLOGY BAN: NEVER mention "PostgreSQL", "database", "database records", "SQL", "tables", "API", "backend", "schema", or "server". Speak naturally from a platform perspective.
+   - REAL PLATFORM DATA: Use the current harvests and farmers provided below when answering specific availability, pricing, or grower questions. Never fabricate non-existent products, farmers, or prices.
+   - MULTILINGUAL: Respond naturally in the user's requested language (${selectedLang.name}).
+
+Current Live Fresh Harvests on Auric Arohi:
 ${harvestsSummary}
 
-Verified Regional Farmers on Auric Arohi:
+Current Verified Regional Farmers on Auric Arohi:
 ${farmersSummary}
 `;
 
-          const contents: any[] = [];
-          if (Array.isArray(history) && history.length > 0) {
-            for (const h of history.slice(-6)) {
-              if (h && h.text && typeof h.text === 'string') {
-                contents.push({
-                  role: h.sender === 'user' || h.role === 'user' ? 'user' : 'model',
-                  parts: [{ text: h.text }],
+        // Format alternating conversation history for Gemini API
+        const sanitizedContents: { role: 'user' | 'model'; parts: { text: string }[] }[] = [];
+        if (Array.isArray(history) && history.length > 0) {
+          let expectedRole: 'user' | 'model' = 'user';
+          for (const h of history.slice(-8)) {
+            if (h && h.text && typeof h.text === 'string' && h.text.trim().length > 0) {
+              const role: 'user' | 'model' = (h.sender === 'user' || h.role === 'user') ? 'user' : 'model';
+              if (role === expectedRole) {
+                sanitizedContents.push({
+                  role,
+                  parts: [{ text: h.text.trim() }],
                 });
+                expectedRole = role === 'user' ? 'model' : 'user';
               }
             }
           }
-          contents.push({
-            role: 'user',
-            parts: [{ text: prompt }],
-          });
+          if (sanitizedContents.length > 0 && sanitizedContents[sanitizedContents.length - 1].role === 'user') {
+            sanitizedContents.pop();
+          }
+        }
 
-          const genPromise = ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents,
+        sanitizedContents.push({
+          role: 'user',
+          parts: [{ text: prompt.trim() }],
+        });
+
+        let aiResponse: any = null;
+        try {
+          aiResponse = await ai.models.generateContent({
+            model: 'gemini-2.0-flash',
+            contents: sanitizedContents,
             config: {
               systemInstruction: {
                 parts: [{ text: systemInstruction }],
               },
             },
           });
-          const genTimeout = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('AI response timed out')), 8000)
-          );
-
-          const aiResponse: any = await Promise.race([genPromise, genTimeout]);
-          if (aiResponse && aiResponse.text) {
-            replyText = aiResponse.text.trim();
-          }
-        } catch (genErr) {
-          console.warn('AI generation timed out or failed; falling back to natural response:', genErr);
+        } catch (modelErr: any) {
+          aiResponse = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: sanitizedContents,
+            config: {
+              systemInstruction: {
+                parts: [{ text: systemInstruction }],
+              },
+            },
+          });
         }
-      }
 
-      // Fallback Natural Responder if AI generation is skipped, times out, or encounters an issue
-      if (!replyText) {
-        replyText = getNaturalTopicReply(prompt, language, activeProduce, activeFarmers, history);
+        if (aiResponse && aiResponse.text) {
+          replyText = aiResponse.text.trim();
+        } else {
+          throw new Error('Gemini returned an empty response.');
+        }
+      } catch (genErr: any) {
+        console.error('Gemini AI generation failed:', genErr);
+        const errMessage = genErr?.message || String(genErr);
+        return res.json({
+          reply: `⚠️ **Auric AI Model Error:** Failed to generate response from Google Gemini.\n\n**Error Details:** ${errMessage}\n\nPlease check that your \`GEMINI_API_KEY\` in \`.env\` is valid and has active quota.`,
+          language: selectedLang.name,
+          detectedLanguage: selectedLang.nativeName,
+          recommendedProduce: matchedProduce,
+          isError: true,
+        });
       }
 
       return res.json({
