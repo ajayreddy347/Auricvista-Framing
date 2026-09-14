@@ -146,7 +146,7 @@ Return strictly valid JSON only.`;
 
       let response: any = null;
       let lastInspectErr: any = null;
-      const inspectModels = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-3.7-flash'];
+      const inspectModels = ['gemini-flash-latest', 'gemini-3.7-flash'];
       for (const m of inspectModels) {
         try {
           response = await ai.models.generateContent({
@@ -1074,12 +1074,8 @@ ${farmersSummary}
         let aiResponse: any = null;
         let lastModelErr: any = null;
         const candidateModels = [
-          'gemini-2.0-flash',
-          'gemini-flash-latest',
           'gemini-flash-lite-latest',
-          'gemini-3-flash-preview',
-          'gemini-3.5-flash',
-          'gemini-3.7-flash',
+          'gemini-flash-latest',
         ];
         for (const candidateModel of candidateModels) {
           try {

@@ -360,11 +360,11 @@ export const FloatingAIAssistant: React.FC = () => {
       setLoadingStep('searching');
     }, 450);
 
-    // Strict 10-second client timeout ensures Auric AI never hangs indefinitely
+    // 25-second client timeout ensures Auric AI never hangs indefinitely while allowing rich generations
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => {
       abortController.abort();
-    }, 10000);
+    }, 25000);
 
     try {
       const res = await fetch('/api/auric-ai-assist', {
