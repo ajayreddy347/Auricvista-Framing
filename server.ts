@@ -144,50 +144,63 @@ Scoring criteria:
 
 Return strictly valid JSON only.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data,
-              },
-            },
-            {
-              text: promptText,
-            },
-          ],
-        },
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              qualityScore: {
-                type: Type.NUMBER,
-                description: 'Quality and freshness score from 1.0 to 10.0',
-              },
-              freshnessLabel: {
-                type: Type.STRING,
-                description: 'Freshness grade: "Excellent", "Good", "Fair", or "Needs Improvement"',
-              },
-              notes: {
-                type: Type.STRING,
-                description: '1-sentence concise observation of visual quality',
-              },
-              tags: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.STRING,
+      let response: any = null;
+      let lastInspectErr: any = null;
+      const inspectModels = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-3.7-flash'];
+      for (const m of inspectModels) {
+        try {
+          response = await ai.models.generateContent({
+            model: m,
+            contents: {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64Data,
+                  },
                 },
-                description: '2 to 3 short descriptive quality tags',
+                {
+                  text: promptText,
+                },
+              ],
+            },
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  qualityScore: {
+                    type: Type.NUMBER,
+                    description: 'Quality and freshness score from 1.0 to 10.0',
+                  },
+                  freshnessLabel: {
+                    type: Type.STRING,
+                    description: 'Freshness grade: "Excellent", "Good", "Fair", or "Needs Improvement"',
+                  },
+                  notes: {
+                    type: Type.STRING,
+                    description: '1-sentence concise observation of visual quality',
+                  },
+                  tags: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.STRING,
+                    },
+                    description: '2 to 3 short descriptive quality tags',
+                  },
+                },
+                required: ['qualityScore', 'freshnessLabel', 'notes', 'tags'],
               },
             },
-            required: ['qualityScore', 'freshnessLabel', 'notes', 'tags'],
-          },
-        },
-      });
+          });
+          if (response && response.text) break;
+        } catch (mErr) {
+          lastInspectErr = mErr;
+        }
+      }
+      if (!response || !response.text) {
+        throw lastInspectErr || new Error('Image inspection returned empty response');
+      }
 
       let responseText = response.text || '';
       responseText = responseText.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim();
@@ -1059,26 +1072,32 @@ ${farmersSummary}
         });
 
         let aiResponse: any = null;
-        try {
-          aiResponse = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: sanitizedContents,
-            config: {
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
+        let lastModelErr: any = null;
+        const candidateModels = [
+          'gemini-2.0-flash',
+          'gemini-flash-latest',
+          'gemini-flash-lite-latest',
+          'gemini-3-flash-preview',
+          'gemini-3.5-flash',
+          'gemini-3.7-flash',
+        ];
+        for (const candidateModel of candidateModels) {
+          try {
+            aiResponse = await ai.models.generateContent({
+              model: candidateModel,
+              contents: sanitizedContents,
+              config: {
+                systemInstruction: {
+                  parts: [{ text: systemInstruction }],
+                },
               },
-            },
-          });
-        } catch (modelErr: any) {
-          aiResponse = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
-            contents: sanitizedContents,
-            config: {
-              systemInstruction: {
-                parts: [{ text: systemInstruction }],
-              },
-            },
-          });
+            });
+            if (aiResponse && aiResponse.text) {
+              break;
+            }
+          } catch (modelErr: any) {
+            lastModelErr = modelErr;
+          }
         }
 
         if (aiResponse && aiResponse.text) {
@@ -1124,6 +1143,7 @@ ${farmersSummary}
     const vite = await createViteServer({
       server: {
         middlewareMode: true,
+        allowedHosts: true,
         hmr: process.env.DISABLE_HMR !== 'true' ? true : false,
       },
       appType: 'spa',
